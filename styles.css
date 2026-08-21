@@ -275,6 +275,68 @@ button {
   background: radial-gradient(ellipse at center, transparent 60%, rgba(4, 2, 6, 0.6) 100%);
 }
 
+/* Stage Loading Overlay & Smooth Fade-in */
+.stage-loading-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #08040a;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.65s ease;
+  pointer-events: none;
+}
+
+.ambient-stage.stage-loaded .stage-loading-shimmer {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading-cozy-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(244, 114, 182, 0.18);
+  border-top-color: var(--primary);
+  animation: cozySpin 0.9s linear infinite;
+}
+
+.loading-cozy-text {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+@keyframes cozySpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Prevent light beams & weather overlays from rendering orphaned before video is decoded */
+.ambient-stage .dynamic-lamp-overlay,
+.ambient-stage .lamp-room-darkness,
+.ambient-stage .lamp-video-hotspot,
+.ambient-stage .window-video-hotspot,
+.ambient-stage .window-weather-viewport {
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ambient-stage.stage-loaded .dynamic-lamp-overlay,
+.ambient-stage.stage-loaded .lamp-room-darkness,
+.ambient-stage.stage-loaded .lamp-video-hotspot,
+.ambient-stage.stage-loaded .window-video-hotspot,
+.ambient-stage.stage-loaded .window-weather-viewport {
+  opacity: 1;
+}
+
 /* ==========================================================================
    2. WINDOW-ONLY WEATHER SIMULATION ENGINE (BOUNDED TO WINDOW GLASS)
    ========================================================================== */

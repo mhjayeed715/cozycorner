@@ -183,22 +183,52 @@ function initLenisScroll() {
 // ==========================================================================
 class VideoBackgroundManager {
   constructor() {
+    this.stage = document.getElementById('ambient-stage');
     this.videoGirl = document.getElementById('bg-video-girl');
     this.videoBoy = document.getElementById('bg-video-boy');
     this.vibeGirlBtn = document.getElementById('vibe-girl-btn');
     this.vibeBoyBtn = document.getElementById('vibe-boy-btn');
+    this.isStageReady = false;
     this.init();
   }
 
+  markStageReady() {
+    if (this.isStageReady) return;
+    this.isStageReady = true;
+    this.stage?.classList.add('stage-loaded');
+    document.body.classList.add('stage-loaded');
+  }
+
   init() {
+    const handleVideoReady = (video) => {
+      if (video && (video.readyState >= 2 || video.currentTime > 0)) {
+        this.markStageReady();
+      }
+    };
+
     [this.videoGirl, this.videoBoy].forEach(video => {
       if (video) {
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
+
+        video.addEventListener('loadeddata', () => handleVideoReady(video));
+        video.addEventListener('canplay', () => handleVideoReady(video));
+        video.addEventListener('playing', () => this.markStageReady());
+        video.addEventListener('timeupdate', () => {
+          if (video.currentTime > 0) this.markStageReady();
+        });
+
+        if (video.readyState >= 2) {
+          this.markStageReady();
+        }
+
         video.play().catch(() => {});
       }
     });
+
+    // Fallback timer: ensure stage becomes visible after max 1.5s even if network is slow
+    setTimeout(() => this.markStageReady(), 1500);
 
     const ensurePlay = () => {
       if (appState.lamp.power && appState.lamp.brightness > 0) {
