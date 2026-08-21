@@ -1862,39 +1862,160 @@ body.wholesome-fullscreen .zen-exit-button {
 }
 
 /* ==========================================================================
-   7. RESPONSIVE DESIGN
+   7. RESPONSIVE DESIGN FOR ALL DEVICES & MOBILE SCREENS
    ========================================================================== */
+
+/* Tablets & Small Laptops (<= 1024px) */
 @media (max-width: 1024px) {
   .scene-overlay {
-    padding: 14px 16px 16px;
+    padding: 12px 16px;
+  }
+  .slim-player-dock {
+    max-width: 440px;
   }
 }
 
+/* Tablets & Large Phones (<= 768px) */
 @media (max-width: 768px) {
+  .scene-overlay {
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
   .top-nav-bar {
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
+    justify-content: space-between;
   }
+
   .nav-center-switcher {
     order: 3;
     width: 100%;
     justify-content: center;
   }
+
   .live-clock {
     display: none;
   }
+
   .nav-btn-text {
     display: none;
   }
-  .ambient-sound-group {
-    display: none;
+
+  .nav-icon-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    position: relative;
   }
+
+  .btn-indicator-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+  }
+
   .bottom-dock-container {
     flex-direction: column;
+    align-items: center;
     gap: 8px;
+    width: 100%;
   }
+
   .slim-player-dock {
     max-width: 100%;
     width: 100%;
+  }
+
+  .quick-focus-dock {
+    width: 100%;
+  }
+
+  .quick-focus-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Mobile Sheet Drawers */
+  .drawer-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+/* Small Smartphone Screens (<= 480px) */
+@media (max-width: 480px) {
+  .scene-overlay {
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .corner-brand {
+    font-size: 13px;
+  }
+
+  .theme-badge {
+    display: none;
+  }
+
+  .room-vibe-switcher {
+    width: 100%;
+  }
+
+  .vibe-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .slim-player-dock {
+    height: 44px;
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .dock-track-info {
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
+    gap: 5px;
+  }
+
+  .dock-track-title {
+    max-width: 70px;
+    font-size: 10px;
+  }
+
+  .dock-track-artist {
+    display: none;
+  }
+
+  .dock-meta {
+    width: 70px;
+  }
+
+  .timeline-bar-track {
+    width: 50px;
+    min-width: 40px;
+    max-width: 65px;
+  }
+
+  .dock-vol-pod {
+    display: none; /* Auto-hide volume on narrow phones to keep scrubber wide */
+  }
+
+  .playlist-tabs-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .playlist-tab-btn {
+    flex-shrink: 0;
   }
 }
