@@ -1,0 +1,1900 @@
+/* ==========================================================================
+   OUR CORNER — INTIMATE ATMOSPHERIC SANCTUARY DESIGN SYSTEM
+   16:9 Pixel-Locked Alignment • Exact Dual Room Lamp & Window Dimensions
+   Window-Only Weather Simulator • Slim Player Dock • Pure SVG Icons
+   ========================================================================== */
+
+/* --- Dynamic Design Tokens & Color Palettes --- */
+:root {
+  /* Default Linkin Park Theme */
+  --bg-base: #0a060d;
+  --bg-surface: rgba(18, 12, 24, 0.72);
+  --bg-surface-elevated: rgba(26, 16, 34, 0.88);
+  --bg-glass-card: rgba(22, 14, 28, 0.65);
+  
+  --primary: #f472b6; /* Blush Pink */
+  --primary-rgb: 244, 114, 182;
+  --primary-light: #fda4af;
+  --primary-glow: rgba(244, 114, 182, 0.45);
+  --primary-deep: #db2777;
+
+  --border-subtle: rgba(244, 114, 182, 0.22);
+  --border-hover: rgba(244, 114, 182, 0.6);
+
+  --text-main: #fdf4f8;
+  --text-muted: #b8a6c4;
+  --text-faint: #786684;
+
+  /* Default Lamp Coordinates (Girl Room: Pink Lamp) */
+  --lamp-origin-x: 42.5%;
+  --lamp-origin-y: 47.0%;
+  --lamp-color: #ffb347;
+  --lamp-rgb: 255, 179, 71;
+  --lamp-brightness: 0.85;
+  --lamp-warmth: 35%;
+  --lamp-power: 1;
+
+  /* Default Window Dimensions (Girl Room) */
+  --window-left: 6.2%;
+  --window-top: 6.0%;
+  --window-width: 24.3%;
+  --window-height: 57.5%;
+
+  /* Dynamic Weather Engine Tokens */
+  --weather-intensity: 0.6;
+  --frost-opacity: 0;
+  --mist-opacity: 0;
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Syne', sans-serif;
+  --font-hand: 'Caveat', cursive;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+
+  --shadow-glass: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-subtle);
+  --shadow-glow: 0 0 25px var(--primary-glow);
+
+  --transition-smooth: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-theme: background 0.7s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+/* ==========================================================================
+   PER-ROOM GEOMETRY (CALIBRATED ACCURATELY TO REAL VIDEO ARTWORK)
+   ========================================================================== */
+
+/* 1. Her Haven (Girl Room: Glass Window Pane strictly between left & right curtains) */
+body.vibe-girl {
+  --lamp-origin-x: 42.5%;
+  --lamp-origin-y: 47.0%;
+  --window-left: 6.2%;
+  --window-top: 6.0%;
+  --window-width: 24.3%;
+  --window-height: 57.5%;
+}
+
+/* 2. His Corner (Boy Room: Glass Window Pane strictly below blinds & left of red curtain) */
+body.vibe-boy {
+  --lamp-origin-x: 46.5%;
+  --lamp-origin-y: 54.5%;
+  --window-left: 6.8%;
+  --window-top: 11.5%;
+  --window-width: 25.2%;
+  --window-height: 54.0%;
+}
+
+/* Theme 2: The Weeknd (After Hours Crimson & Neon) */
+body[data-theme="the-weeknd"] {
+  --bg-base: #0a0408;
+  --bg-surface: rgba(22, 8, 16, 0.78);
+  --bg-surface-elevated: rgba(34, 12, 24, 0.92);
+  --bg-glass-card: rgba(28, 10, 20, 0.72);
+
+  --primary: #f43f5e;
+  --primary-rgb: 244, 63, 94;
+  --primary-light: #fb7185;
+  --primary-glow: rgba(244, 63, 94, 0.48);
+  --primary-deep: #e11d48;
+
+  --border-subtle: rgba(244, 63, 94, 0.25);
+  --border-hover: rgba(244, 63, 94, 0.65);
+
+  --text-main: #fff1f2;
+  --text-muted: #c99ea8;
+  --text-faint: #825a66;
+}
+
+/* Theme 3: One Direction (Midnight Sapphire & Pop Gold) */
+body[data-theme="one-direction"] {
+  --bg-base: #060b14;
+  --bg-surface: rgba(10, 18, 30, 0.78);
+  --bg-surface-elevated: rgba(16, 28, 46, 0.92);
+  --bg-glass-card: rgba(12, 22, 38, 0.72);
+
+  --primary: #38bdf8;
+  --primary-rgb: 56, 189, 248;
+  --primary-light: #7dd3fc;
+  --primary-glow: rgba(56, 189, 248, 0.45);
+  --primary-deep: #0284c7;
+
+  --border-subtle: rgba(56, 189, 248, 0.25);
+  --border-hover: rgba(56, 189, 248, 0.65);
+
+  --text-main: #f0f9ff;
+  --text-muted: #9ec3db;
+  --text-faint: #5a7d96;
+}
+
+/* Theme 4: Metallica */
+body[data-theme="metallica"] {
+  --bg-base: #080406;
+  --bg-surface: rgba(20, 10, 14, 0.75);
+  --bg-surface-elevated: rgba(30, 14, 20, 0.9);
+  --bg-glass-card: rgba(24, 12, 16, 0.7);
+
+  --primary: #ef4444;
+  --primary-rgb: 239, 68, 68;
+  --primary-light: #f87171;
+  --primary-glow: rgba(239, 68, 68, 0.45);
+  --primary-deep: #b91c1c;
+
+  --border-subtle: rgba(239, 68, 68, 0.24);
+  --border-hover: rgba(239, 68, 68, 0.65);
+
+  --text-main: #fff1f2;
+  --text-muted: #b89c9e;
+  --text-faint: #785a5c;
+}
+
+/* Theme 3: Soft Lo-Fi */
+body[data-theme="soft-lofi"] {
+  --bg-base: #0f0b14;
+  --bg-surface: rgba(26, 19, 34, 0.75);
+  --bg-surface-elevated: rgba(38, 28, 48, 0.9);
+  --bg-glass-card: rgba(30, 22, 38, 0.7);
+
+  --primary: #fde68a;
+  --primary-rgb: 253, 230, 138;
+  --primary-light: #fef3c7;
+  --primary-glow: rgba(253, 230, 138, 0.4);
+  --primary-deep: #f59e0b;
+
+  --border-subtle: rgba(253, 230, 138, 0.22);
+  --border-hover: rgba(253, 230, 138, 0.6);
+
+  --text-main: #fef3c7;
+  --text-muted: #bdaec9;
+  --text-faint: #766685;
+}
+
+/* --- Reset & Base Layout --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  transition: var(--transition-theme);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* ==========================================================================
+   1. REAL VIDEO BACKGROUND ENGINE (16:9 LOCKED ALIGNMENT)
+   ========================================================================== */
+.ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  overflow: hidden;
+  background: #060308;
+}
+
+/* 16:9 Responsive Locked Stage */
+.ambient-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100vw, calc(100vh * 16 / 9));
+  height: max(100vh, calc(100vw * 9 / 16));
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ambient-video-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.bg-video-element {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.85s ease;
+  filter: brightness(0.96) contrast(1.04) saturate(1.08);
+  will-change: opacity;
+}
+
+.bg-video-element.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+
+.video-color-grade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 65% 45%, rgba(var(--primary-rgb), 0.08) 0%, rgba(8, 4, 12, 0.35) 100%);
+  mix-blend-mode: soft-light;
+}
+
+.video-vignette-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(4, 2, 6, 0.6) 100%);
+}
+
+/* ==========================================================================
+   2. WINDOW-ONLY WEATHER SIMULATION ENGINE (BOUNDED TO WINDOW GLASS)
+   ========================================================================== */
+.window-weather-viewport {
+  position: absolute;
+  top: var(--window-top);
+  left: var(--window-left);
+  width: var(--window-width);
+  height: var(--window-height);
+  overflow: hidden;
+  clip-path: inset(0 0 0 0);
+  pointer-events: none;
+  z-index: 6;
+  transition: width 0.35s ease, height 0.35s ease, left 0.35s ease, top 0.35s ease;
+  /* Feathered edge mask to avoid any sharp box seams */
+  -webkit-mask-image: linear-gradient(to right, black 82%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 82%, transparent 100%), linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* Window Frosted Glass Mask (Soft radial glow, zero hard edges) */
+.window-frost-mask {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 40% 50%, transparent 20%, rgba(200, 230, 255, 0.25) 75%, transparent 100%);
+  opacity: var(--frost-opacity, 0);
+  mix-blend-mode: screen;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+/* Window Mist & Condensation Layer (Seamless, zero solid background) */
+.window-mist-mask {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(calc(var(--mist-opacity, 0) * 4px));
+  background: radial-gradient(ellipse at 45% 45%, rgba(180, 210, 240, calc(var(--mist-opacity, 0) * 0.12)) 0%, transparent 95%);
+  opacity: var(--mist-opacity, 0);
+  transition: opacity 0.8s ease, backdrop-filter 0.8s ease;
+  pointer-events: none;
+}
+
+/* Weather Canvas */
+.weather-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Window-specific Lightning Flash Strobe */
+.lightning-overlay {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  transition: opacity 0.05s ease-out;
+}
+
+.lightning-overlay.flash {
+  opacity: 0.98;
+}
+
+/* Interactive Window Hotspot (Centered in the window pane) */
+.window-video-hotspot {
+  position: absolute;
+  top: calc(var(--window-top) + var(--window-height) / 2);
+  left: calc(var(--window-left) + var(--window-width) / 2);
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: top 0.4s ease, left 0.4s ease;
+}
+
+.hotspot-pulse-ring {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.window-video-hotspot:hover .hotspot-pulse-ring {
+  opacity: 0.85;
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.8);
+}
+
+.hotspot-badge {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(14, 9, 20, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hotspot-badge svg {
+  width: 12px;
+  height: 12px;
+  color: var(--primary);
+}
+
+.window-video-hotspot:hover .hotspot-badge {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   3. PRECISION DESK LAMP ORIGIN & ILLUMINATION ENGINE (EXACT BULB CENTERING)
+   ========================================================================== */
+
+/* Room Darkness Filter */
+.lamp-room-darkness {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: #020104;
+  opacity: calc((1 - (var(--lamp-brightness) * var(--lamp-power))) * 0.85);
+  mix-blend-mode: multiply;
+  transition: opacity 0.35s ease;
+}
+
+/* Dynamic Lamp Light Bloom & Shaders */
+.dynamic-lamp-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 0.35s ease;
+}
+
+/* 1. Bulb Core directly placed on the lamp aperture */
+.lamp-bulb-source {
+  position: absolute;
+  top: var(--lamp-origin-y);
+  left: var(--lamp-origin-x);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  box-shadow: 0 0 16px 6px var(--lamp-color), 0 0 38px 12px rgba(var(--lamp-rgb), 0.95), 0 0 75px 22px rgba(var(--lamp-rgb), 0.6);
+  opacity: calc(var(--lamp-brightness) * var(--lamp-power));
+  transition: opacity 0.3s ease, box-shadow 0.4s ease, top 0.4s ease, left 0.4s ease;
+}
+
+/* 2. Angled Desk Beam projecting downwards-right across the desk */
+.lamp-desk-beam {
+  position: absolute;
+  top: var(--lamp-origin-y);
+  left: var(--lamp-origin-x);
+  width: 420px;
+  height: 420px;
+  transform-origin: 0 0;
+  background: conic-gradient(from 40deg at 0 0, rgba(var(--lamp-rgb), 0.95) 0deg, rgba(var(--lamp-rgb), 0.7) 40deg, rgba(var(--lamp-rgb), 0.2) 75deg, transparent 90deg);
+  opacity: calc(var(--lamp-brightness) * var(--lamp-power) * 0.9);
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  transition: opacity 0.3s ease, top 0.4s ease, left 0.4s ease;
+}
+
+/* 3. Radial Spotlight Pool on the notebook & study desk */
+.lamp-spotlight-radial {
+  position: absolute;
+  top: calc(var(--lamp-origin-y) + 28%);
+  left: calc(var(--lamp-origin-x) + 10%);
+  transform: translate(-50%, -50%) rotate(15deg);
+  width: 380px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(var(--lamp-rgb), 0.9) 0%, rgba(var(--lamp-rgb), 0.45) 45%, transparent 75%);
+  opacity: calc(var(--lamp-brightness) * var(--lamp-power) * 0.85);
+  filter: blur(20px);
+  mix-blend-mode: screen;
+  transition: opacity 0.3s ease, background 0.4s ease, top 0.4s ease, left 0.4s ease;
+}
+
+/* 4. Atmospheric Ambient Bloom radiating from the lamp bulb */
+.lamp-ambient-bloom {
+  position: absolute;
+  top: var(--lamp-origin-y);
+  left: var(--lamp-origin-x);
+  transform: translate(-50%, -50%);
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, var(--lamp-color) 0%, rgba(var(--lamp-rgb), 0.35) 35%, rgba(var(--lamp-rgb), 0.1) 60%, transparent 80%);
+  opacity: calc(var(--lamp-brightness) * var(--lamp-power) * 0.7);
+  filter: blur(35px);
+  mix-blend-mode: screen;
+  transition: opacity 0.3s ease, background 0.4s ease, top 0.4s ease, left 0.4s ease;
+}
+
+/* 5. Global Room Warmth Wash */
+.lamp-warmth-tint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--lamp-origin-x) var(--lamp-origin-y), rgba(var(--lamp-rgb), 0.3) 0%, transparent 65%);
+  opacity: calc(var(--lamp-brightness) * var(--lamp-power) * 0.6);
+  mix-blend-mode: color-dodge;
+  transition: opacity 0.3s ease, background 0.4s ease;
+}
+
+/* Interactive Lamp Hotspot (Centered exactly on the bulb) */
+.lamp-video-hotspot {
+  position: absolute;
+  top: var(--lamp-origin-y);
+  left: var(--lamp-origin-x);
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: top 0.4s ease, left 0.4s ease;
+}
+
+.lamp-video-hotspot:hover .hotspot-pulse-ring {
+  opacity: 0.85;
+  transform: scale(1.15);
+  border-color: var(--lamp-color);
+  box-shadow: 0 0 20px var(--lamp-color);
+}
+
+.lamp-video-hotspot .hotspot-badge svg {
+  color: var(--lamp-color);
+}
+
+.lamp-video-hotspot:hover .hotspot-badge {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Dreamy Grain Layer */
+.dreamy-grain-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   4. SEAMLESS FLOATING INTERFACE (MINIMALIST, CLEAN & ULTRA-SLIM)
+   ========================================================================== */
+.scene-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 16px 24px 20px;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+body.wholesome-fullscreen .scene-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+}
+
+/* Top Navigation Bar */
+.top-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  pointer-events: auto;
+  gap: 10px;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.corner-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.nav-icon-sparkle {
+  width: 15px;
+  height: 15px;
+  color: var(--primary);
+}
+
+.corner-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.theme-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  border-radius: var(--radius-pill);
+}
+
+.live-clock {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  background: rgba(14, 9, 20, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-pill);
+}
+
+/* Room Video Switcher */
+.nav-center-switcher {
+  display: flex;
+  align-items: center;
+}
+
+.room-vibe-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(14, 9, 20, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.vibe-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  transition: var(--transition-smooth);
+}
+
+.vibe-icon-svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vibe-btn:hover {
+  color: var(--text-main);
+}
+
+.vibe-btn.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.5) 0%, rgba(var(--primary-rgb), 0.25) 100%);
+  border: 1px solid rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 3px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+/* Action Buttons */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: var(--transition-smooth);
+}
+
+.nav-icon-btn:hover {
+  color: var(--text-main);
+  border-color: var(--border-hover);
+  background: var(--bg-surface-elevated);
+  transform: translateY(-1px);
+}
+
+.nav-btn-highlight {
+  background: rgba(18, 12, 24, 0.8);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lamp-color);
+  box-shadow: 0 0 8px var(--lamp-color);
+}
+
+.btn-indicator-dot.sound-dot {
+  background: #64748b;
+  box-shadow: none;
+}
+
+.btn-indicator-dot.sound-dot.active {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.nav-svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Ambient Sound Group */
+.ambient-sound-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  background: rgba(14, 9, 20, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-pill);
+}
+
+.sound-group-label {
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  color: var(--text-faint);
+}
+
+.sound-label-svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ambient-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: transparent;
+  transition: var(--transition-smooth);
+}
+
+.chip-svg {
+  width: 13px;
+  height: 13px;
+}
+
+.ambient-chip:hover {
+  color: var(--text-main);
+}
+
+.ambient-chip.active {
+  background: rgba(var(--primary-rgb), 0.28);
+  color: #ffffff;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* ==========================================================================
+   5. SLIM AUDIO PLAYER & QUICK FOCUS DOCK
+   ========================================================================== */
+.bottom-dock-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* Slim Music Player */
+.slim-player-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 12px;
+  height: 46px;
+  max-width: 480px;
+  flex: 0 1 480px;
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-glass);
+  pointer-events: auto;
+}
+
+.dock-track-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-smooth);
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+
+.dock-track-info:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dock-album-glow {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.3) 0%, rgba(14, 9, 20, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mini-equalizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+}
+
+.eq-bar {
+  width: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+  height: 3px;
+}
+
+.mini-equalizer.playing .bar-1 { animation: eqJump 1.1s infinite ease-in-out; }
+.mini-equalizer.playing .bar-2 { animation: eqJump 0.9s infinite ease-in-out 0.2s; }
+.mini-equalizer.playing .bar-3 { animation: eqJump 1.3s infinite ease-in-out 0.4s; }
+
+@keyframes eqJump {
+  0%, 100% { height: 2px; }
+  50% { height: 11px; }
+}
+
+.dock-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 85px;
+  flex-shrink: 0;
+}
+
+.dock-track-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85px;
+  display: block;
+}
+
+.dock-track-artist {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85px;
+  display: block;
+}
+
+.playlist-chevron-svg {
+  width: 12px;
+  height: 12px;
+  color: var(--primary);
+  opacity: 0.8;
+  margin-left: 1px;
+  flex-shrink: 0;
+}
+
+.dock-audio-controls-center {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 190px;
+}
+
+.controls-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.audio-nav-btn {
+  color: var(--text-muted);
+  padding: 2px;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.audio-nav-btn:hover {
+  color: var(--text-main);
+  transform: scale(1.12);
+}
+
+.audio-nav-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.audio-seek-btn {
+  color: var(--text-muted);
+  padding: 2px;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.audio-seek-btn:hover {
+  color: var(--primary);
+  transform: scale(1.12);
+}
+
+.audio-seek-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.audio-main-play-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #0e0612;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px var(--primary-glow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+  margin: 0 1px;
+}
+
+.audio-main-play-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px var(--primary);
+}
+
+.play-icon-svg {
+  width: 12px;
+  height: 12px;
+}
+
+.time-stamp {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  min-width: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.timeline-bar-track {
+  position: relative;
+  width: 75px;
+  min-width: 60px;
+  max-width: 95px;
+  flex: 1 1 75px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: height 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.timeline-bar-track:hover,
+.timeline-bar-track.dragging {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.timeline-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  transition: width 0.05s linear;
+}
+
+.timeline-scrubber-handle {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px var(--primary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.timeline-bar-track:hover .timeline-scrubber-handle,
+.timeline-bar-track.dragging .timeline-scrubber-handle {
+  opacity: 1;
+}
+
+.dock-vol-pod {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 65px;
+}
+
+.dock-svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+}
+
+.subtle-slider {
+  -webkit-appearance: none;
+  width: 44px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-pill);
+  outline: none;
+  cursor: pointer;
+}
+
+.subtle-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+/* Quick Focus Dock */
+.quick-focus-dock {
+  pointer-events: auto;
+}
+
+.quick-focus-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 14px;
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-glass);
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+
+.quick-focus-btn:hover {
+  border-color: var(--border-hover);
+  background: rgba(30, 18, 40, 0.95);
+  transform: translateY(-1px);
+}
+
+.focus-icon-svg {
+  width: 13px;
+  height: 13px;
+  color: var(--primary);
+}
+
+.focus-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  display: none;
+}
+
+.quick-focus-btn.running .focus-pulse-dot {
+  display: inline-block;
+  animation: pulseDot 1.4s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+.focus-action-label {
+  padding: 2px 6px;
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-light);
+  border-radius: var(--radius-pill);
+  font-size: 9.5px;
+}
+
+/* Background YouTube & Audio Engine Container */
+.hidden-audio-engine {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0.001;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hidden-audio-engine iframe,
+.hidden-audio-engine div,
+.hidden-audio-engine audio {
+  width: 1px;
+  height: 1px;
+}
+
+/* Fullscreen Wholesome Exit */
+.zen-exit-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  background: rgba(14, 9, 20, 0.88);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--text-main);
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: var(--shadow-glass);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 999;
+}
+
+body.wholesome-fullscreen .zen-exit-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.zen-exit-svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ==========================================================================
+   6. PLAYLIST & SETTINGS DRAWERS
+   ========================================================================== */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(4, 2, 7, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-panel {
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(28px);
+  border-left: 1px solid var(--border-subtle);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.7);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-overlay.open .drawer-panel {
+  transform: translateX(0);
+}
+
+.drawer-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.drawer-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.drawer-close-btn {
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.drawer-close-btn:hover {
+  color: var(--text-main);
+  transform: rotate(90deg);
+}
+
+.drawer-close-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Playlist Tabs */
+.playlist-tabs-row {
+  display: flex;
+  gap: 6px;
+  background: rgba(14, 9, 20, 0.6);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.playlist-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.tab-svg {
+  width: 13px;
+  height: 13px;
+}
+
+.playlist-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.playlist-tab-btn.active {
+  background: var(--primary);
+  color: #0e0514;
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* Tracklist */
+.full-tracklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 20px;
+}
+
+.track-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: rgba(14, 9, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.track-item-card:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-hover);
+  transform: translateX(2px);
+}
+
+.track-item-card.active {
+  background: rgba(var(--primary-rgb), 0.16);
+  border-color: var(--primary);
+}
+
+.track-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.track-number {
+  font-family: monospace;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  min-width: 18px;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.track-artist-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.track-play-badge {
+  font-size: 11px;
+  color: var(--primary);
+  opacity: 0.7;
+}
+
+.track-item-card.active .track-play-badge {
+  opacity: 1;
+  font-weight: 700;
+}
+
+/* Studio Sections in Settings */
+.studio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--primary);
+}
+
+.slider-control-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(14, 9, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.slider-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slider-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.slider-val-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.15);
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.studio-range-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-pill);
+  outline: none;
+  cursor: pointer;
+}
+
+.studio-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.custom-lamp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(14, 9, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.custom-lamp-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.custom-color-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-wheel-pill {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: none;
+}
+
+.hex-badge {
+  font-family: monospace;
+  font-size: 10.5px;
+  color: var(--primary-light);
+  background: rgba(var(--primary-rgb), 0.15);
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+}
+
+/* --- Playlist Drawer & Tracklist --- */
+.drawer-playlist {
+  max-width: 480px;
+}
+
+.playlist-tabs-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  background: rgba(10, 6, 14, 0.6);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.playlist-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+
+.playlist-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.playlist-tab-btn.active {
+  background: var(--primary);
+  color: #0e0514;
+  box-shadow: 0 0 14px var(--primary-glow);
+}
+
+.tab-svg {
+  width: 13px;
+  height: 13px;
+}
+
+.playlist-custom-add-box {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.playlist-add-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(10, 6, 14, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 11px;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.playlist-add-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.35);
+}
+
+.playlist-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  background: var(--primary);
+  color: #0e0514;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.playlist-add-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.playlist-add-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.custom-url-feedback {
+  font-size: 10.5px;
+  margin-bottom: 8px;
+  min-height: 14px;
+  color: var(--primary-light);
+  transition: opacity 0.2s ease;
+}
+
+.custom-url-feedback.error {
+  color: #f87171;
+}
+
+.full-tracklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.track-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(16, 10, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.track-item-card:hover {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: var(--border-hover);
+  transform: translateX(3px);
+}
+
+.track-item-card.active {
+  background: rgba(var(--primary-rgb), 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 16px var(--primary-glow);
+}
+
+.track-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.track-number {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 24px;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.track-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.track-item-card.active .track-name {
+  color: var(--primary-light);
+}
+
+.track-artist-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.track-play-badge-svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: var(--transition-smooth);
+}
+
+.track-item-card:hover .track-play-badge-svg,
+.track-item-card.active .track-play-badge-svg {
+  color: var(--primary);
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.mixer-channels-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mixer-card {
+  padding: 10px 12px;
+  background: rgba(14, 9, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mixer-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.mixer-channel-toggle {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: var(--transition-smooth);
+}
+
+.mixer-channel-toggle.active {
+  background: var(--primary);
+  color: #0e0514;
+  border-color: var(--primary);
+}
+
+.theme-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-preset-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(14, 9, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.theme-preset-card:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-hover);
+}
+
+.theme-preset-card.active {
+  background: rgba(var(--primary-rgb), 0.14);
+  border-color: var(--primary);
+}
+
+.preset-color-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 5px;
+  height: 28px;
+}
+
+.preset-color-strip span {
+  flex: 1;
+  border-radius: 2px;
+}
+
+.preset-details {
+  flex: 1;
+}
+
+.preset-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.preset-sub {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.track-item-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition-smooth);
+}
+
+.track-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+  border-color: #ef4444;
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.track-delete-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.studio-playlist-shortcut {
+  background: rgba(var(--primary-rgb), 0.07);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.studio-section-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.studio-open-playlist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: #0e0514;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 14px var(--primary-glow);
+}
+
+.studio-open-playlist-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--primary);
+}
+
+.studio-open-playlist-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ==========================================================================
+   7. RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .scene-overlay {
+    padding: 14px 16px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-nav-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-center-switcher {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  .live-clock {
+    display: none;
+  }
+  .nav-btn-text {
+    display: none;
+  }
+  .ambient-sound-group {
+    display: none;
+  }
+  .bottom-dock-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .slim-player-dock {
+    max-width: 100%;
+    width: 100%;
+  }
+}

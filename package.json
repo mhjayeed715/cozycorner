@@ -1,0 +1,23 @@
+{
+  "name": "our-corner",
+  "version": "1.0.0",
+  "description": "An intimate cozy ambient corner web app with Linkin Park soundtrack, rain visuals, and mood controls.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y serve . -l 3000",
+    "dev": "npx -y serve . -l 3000",
+    "serve": "npx -y serve . -l 3000"
+  },
+  "keywords": [
+    "cozy",
+    "ambient",
+    "music",
+    "linkin-park",
+    "aesthetic"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
