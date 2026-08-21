@@ -260,6 +260,68 @@ class VideoBackgroundManager {
 }
 
 // ==========================================================================
+// 3.5. EYE-CATCHING SANCTUARY FULL-SCREEN PRELOADER
+// ==========================================================================
+class SanctuaryPreloaderManager {
+  constructor() {
+    this.preloader = document.getElementById('sanctuary-preloader');
+    this.barFill = document.getElementById('preloader-bar-fill');
+    this.statusText = document.getElementById('preloader-status-text');
+    this.isDismissed = false;
+    this.progress = 20;
+    this.init();
+  }
+
+  setProgress(percent, text) {
+    this.progress = Math.max(this.progress, percent);
+    if (this.barFill) this.barFill.style.width = `${this.progress}%`;
+    if (text && this.statusText) this.statusText.textContent = text;
+  }
+
+  dismiss() {
+    if (this.isDismissed) return;
+    this.isDismissed = true;
+    this.setProgress(100, 'Welcome to your sanctuary');
+
+    setTimeout(() => {
+      if (this.preloader) {
+        this.preloader.classList.add('fade-out');
+        setTimeout(() => {
+          this.preloader?.remove();
+        }, 900);
+      }
+    }, 400);
+  }
+
+  init() {
+    if (!this.preloader) return;
+
+    this.setProgress(40, 'Illuminating cozy ambiance...');
+    setTimeout(() => this.setProgress(65, 'Loading video backdrop...'), 180);
+
+    const video = document.getElementById('bg-video-girl');
+
+    const onReady = () => {
+      this.setProgress(90, 'Harmonizing weather...');
+      setTimeout(() => this.dismiss(), 350);
+    };
+
+    if (video) {
+      if (video.readyState >= 2 || video.currentTime > 0) {
+        onReady();
+      } else {
+        video.addEventListener('loadeddata', onReady, { once: true });
+        video.addEventListener('canplay', onReady, { once: true });
+        video.addEventListener('playing', onReady, { once: true });
+      }
+    }
+
+    // Smooth guaranteed fallback: max 2.2s
+    setTimeout(() => this.dismiss(), 2200);
+  }
+}
+
+// ==========================================================================
 // 4. PRECISION DESK LAMP ENGINE (1-CLICK CYCLING + MANUAL SLIDERS)
 // ==========================================================================
 class LampController {
@@ -1620,6 +1682,7 @@ function updateClock() {
 document.addEventListener('DOMContentLoaded', () => {
   initLenisScroll();
 
+  const preloader = new SanctuaryPreloaderManager();
   const videoManager = new VideoBackgroundManager();
   const lampController = new LampController();
   const weatherEngine = new WeatherCanvasEngine('weather-canvas');
