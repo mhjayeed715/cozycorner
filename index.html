@@ -204,6 +204,14 @@
           <span class="nav-btn-text" id="nav-playlist-text">Playlist: Linkin Park</span>
         </button>
 
+        <!-- Download CozyLock Chrome Extension -->
+        <a href="CozyLock-Chrome-Extension.zip" download="CozyLock-Chrome-Extension.zip" id="nav-download-extension-btn" class="nav-icon-btn nav-btn-highlight nav-download-btn" title="Download CozyLock Chrome Extension (.zip)" aria-label="Download CozyLock Extension">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span class="nav-btn-text">Get Extension</span>
+        </a>
+
         <!-- Fullscreen Wholesome Aesthetic View -->
         <button id="nav-fullscreen-toggle" class="nav-icon-btn" title="Wholesome Fullscreen Study View (Press F or Z)" aria-label="Toggle Fullscreen">
           <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -305,6 +313,9 @@
           <span class="focus-pulse-dot" id="focus-pulse-dot"></span>
           <span class="focus-timer-text" id="quick-focus-timer-text">25:00</span>
           <span class="focus-action-label" id="quick-focus-action-label">Start</span>
+        </button>
+        <button class="focus-reset-btn" id="quick-focus-reset-btn" title="Reset Focus Timer" aria-label="Reset Focus Timer" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         </button>
       </div>
 
@@ -540,6 +551,106 @@
         </div>
       </div>
 
+      <!-- Section: CozyLock Focus Companion & Allowed Sites Whitelist -->
+      <div class="studio-section studio-cozylock-section">
+        <div class="cozylock-header-row">
+          <div>
+            <h4 class="studio-section-title">CozyLock Focus Companion</h4>
+            <p class="studio-section-sub">Browser-level distraction blocker synchronized with your Cozy study timer.</p>
+          </div>
+          <div class="cozylock-status-badge" id="cozylock-status-badge">
+            <span class="cozylock-badge-dot" id="cozylock-badge-dot"></span>
+            <span id="cozylock-badge-text">CozyLock: Ready</span>
+          </div>
+        </div>
+
+        <!-- Focus Timer Settings -->
+        <div class="cozylock-timer-card">
+          <div class="slider-header-row">
+            <span class="slider-label">Focus Session Duration</span>
+            <span class="slider-val-badge" id="focus-duration-badge">25 min</span>
+          </div>
+          <div class="focus-preset-pills">
+            <button class="focus-preset-pill" data-minutes="15">15m</button>
+            <button class="focus-preset-pill active" data-minutes="25">25m</button>
+            <button class="focus-preset-pill" data-minutes="45">45m</button>
+            <button class="focus-preset-pill" data-minutes="60">60m</button>
+            <button class="focus-preset-pill" data-minutes="90">90m</button>
+          </div>
+        </div>
+
+        <!-- Whitelist Settings -->
+        <div class="whitelist-manager-card">
+          <div class="whitelist-card-header">
+            <div>
+              <span class="slider-label">Allowed Sites Whitelist (<span id="whitelist-count-badge">11</span>)</span>
+              <p class="whitelist-card-hint">Only these domains can be accessed while your focus timer is active.</p>
+            </div>
+            <button class="whitelist-reset-btn" id="whitelist-reset-btn" title="Reset to default study sites">Reset Defaults</button>
+          </div>
+
+          <!-- Quick-Add Presets -->
+          <div class="whitelist-presets-row">
+            <span class="presets-label">Quick Add:</span>
+            <button class="preset-add-chip" data-domain="github.com">+ GitHub</button>
+            <button class="preset-add-chip" data-domain="notion.so">+ Notion</button>
+            <button class="preset-add-chip" data-domain="docs.google.com">+ Google Docs</button>
+            <button class="preset-add-chip" data-domain="chatgpt.com">+ ChatGPT</button>
+            <button class="preset-add-chip" data-domain="claude.ai">+ Claude</button>
+            <button class="preset-add-chip" data-domain="figma.com">+ Figma</button>
+            <button class="preset-add-chip" data-domain="wikipedia.org">+ Wikipedia</button>
+            <button class="preset-add-chip" data-domain="canvas.instructure.com">+ Canvas</button>
+          </div>
+
+          <!-- Add Input -->
+          <div class="whitelist-add-row">
+            <input type="text" id="whitelist-input" placeholder="e.g. stackoverflow.com or leetcode.com" class="whitelist-input" autocomplete="off" spellcheck="false">
+            <button id="whitelist-add-btn" class="whitelist-add-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Add Site</span>
+            </button>
+          </div>
+          <div id="whitelist-feedback" class="whitelist-feedback"></div>
+
+          <!-- Active Chips Container -->
+          <div class="whitelist-chips-container" id="whitelist-chips-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Safety PIN Settings Card -->
+        <div class="cozylock-pin-card">
+          <div class="slider-header-row">
+            <div>
+              <span class="slider-label">4-Digit Safety PIN</span>
+              <p class="whitelist-card-hint">Required to stop or cancel focus lock sessions early.</p>
+            </div>
+            <span class="slider-val-badge" id="pin-saved-badge">Not Set</span>
+          </div>
+          <div class="pin-setting-row">
+            <input type="password" id="cozy-pin-input" placeholder="4 digits (e.g. 1234)" maxlength="4" class="cozy-pin-input" autocomplete="off" inputmode="numeric">
+            <button id="cozy-pin-save-btn" class="cozy-pin-save-btn">Save PIN</button>
+          </div>
+          <div id="cozy-pin-feedback" class="whitelist-feedback"></div>
+        </div>
+
+        <!-- Extension Download Card -->
+        <div class="cozylock-download-banner">
+          <div class="banner-left">
+            <span class="banner-icon">📦</span>
+            <div>
+              <div class="banner-title">Download CozyLock Extension</div>
+              <div class="banner-subtitle">Pre-packaged & ready for Chrome (v2.0.0). Load unpacked in <code>chrome://extensions</code>.</div>
+            </div>
+          </div>
+          <a href="CozyLock-Chrome-Extension.zip" download="CozyLock-Chrome-Extension.zip" class="cozylock-download-action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download .ZIP</span>
+          </a>
+        </div>
+
+      </div>
+
       <!-- Section: Music & Playlists Shortcut -->
       <div class="studio-section studio-playlist-shortcut">
         <h4 class="studio-section-title">Music & Custom Playlists</h4>
@@ -550,6 +661,27 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SAFETY PIN UNLOCK MODAL (Required to release focus session early)
+       ========================================================================= -->
+  <div class="pin-modal-overlay" id="pin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title">
+    <div class="pin-modal-card">
+      <div class="pin-modal-icon">🔒</div>
+      <h3 class="pin-modal-title" id="pin-modal-title">Focus Lock Active</h3>
+      <p class="pin-modal-desc">Enter your 4-digit Safety PIN to release the focus session early.</p>
+      
+      <div class="pin-modal-input-row">
+        <input type="password" id="modal-pin-input" maxlength="4" placeholder="••••" class="modal-pin-input" autocomplete="off" inputmode="numeric">
+      </div>
+      <div id="modal-pin-feedback" class="modal-pin-feedback"></div>
+
+      <div class="pin-modal-actions">
+        <button id="modal-pin-cancel-btn" class="pin-modal-cancel-btn">Keep Focusing</button>
+        <button id="modal-pin-submit-btn" class="pin-modal-submit-btn">Unlock Now</button>
+      </div>
     </div>
   </div>
 

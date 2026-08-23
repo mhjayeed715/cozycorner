@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CozyLock — Focus Companion</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-brand">
+        <span class="brand-icon">🔒</span>
+        <div class="brand-text">
+          <h1>CozyLock <span class="badge">v2.0</span></h1>
+          <p>Cozy Corner Focus Companion</p>
+        </div>
+      </div>
+      <button id="openAppBtn" class="app-link-btn" title="Open Cozy Corner Sanctuary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabFocusBtn">Focus Lock</button>
+      <button class="tab-btn" id="tabSettingsBtn">Settings & Sites</button>
+    </div>
+
+    <!-- TAB 1: FOCUS CONTROLS -->
+    <div id="tabFocus" class="tab-content active">
+      <!-- Status Display -->
+      <div id="statusDisplay" class="status-card">
+        <span class="status-dot idle" id="statusDot"></span>
+        <span class="status-label">Status: <strong id="statusText">Ready / Inactive</strong></span>
+      </div>
+
+      <!-- Timer Display (only when active) -->
+      <div id="timerDisplay" class="timer-display" style="display: none;">
+        <div class="timer-circle">
+          <span id="timerText">25:00</span>
+        </div>
+        <p id="timerLabel">Gentle focus session in progress ✨</p>
+      </div>
+
+      <!-- Focus Duration Selection -->
+      <div class="section" id="durationSection">
+        <label class="section-label">Session Duration</label>
+        <div class="duration-buttons">
+          <button class="duration-btn" data-minutes="15">15m</button>
+          <button class="duration-btn active" data-minutes="25">25m</button>
+          <button class="duration-btn" data-minutes="45">45m</button>
+          <button class="duration-btn" data-minutes="60">60m</button>
+        </div>
+        <div class="custom-duration-row">
+          <input
+            type="number"
+            id="manualDurationInput"
+            placeholder="Custom min"
+            min="1"
+            max="180"
+            class="input-field"
+          />
+          <span class="helper-text">Custom minutes (1–180)</span>
+        </div>
+      </div>
+
+      <!-- Main Action Buttons -->
+      <button id="focusBtn" class="focus-btn">Start Cozy Focus</button>
+      <button id="stopFocusBtn" class="stop-focus-btn" style="display: none;">Release Focus Lock</button>
+
+      <!-- Stats -->
+      <div id="statsDisplay" class="stats-row" style="display: none;">
+        <div class="stat-box">
+          <span class="stat-title">Blocked Distractions</span>
+          <span id="blockCount" class="stat-number">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-title">Whitelisted Sites</span>
+          <span id="allowedCount" class="stat-number">11</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SETTINGS & WHITELIST -->
+    <div id="tabSettings" class="tab-content">
+      <div class="section">
+        <label class="section-label">Active Whitelist Sites</label>
+        <p class="section-subtext">Sites permitted during focus sessions. Customize full lists inside Cozy Corner settings.</p>
+        
+        <div id="whitelistTagsPreview" class="whitelist-tags-preview">
+          <!-- Populated dynamically by popup.ts -->
+        </div>
+      </div>
+
+      <div class="section">
+        <label class="section-label">4-Digit Safety PIN</label>
+        <p class="section-subtext">Required to release early focus sessions.</p>
+        <div style="display: flex; gap: 8px;">
+          <input type="password" id="pinInput" placeholder="4 digits" class="input-field" maxlength="4" inputmode="numeric" />
+          <button id="savePinBtn" class="secondary-btn">Save</button>
+        </div>
+        <div id="pinStatusText" style="font-size: 11px; margin-top: 6px; color: #34d399;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./popup.js"></script>
+</body>
+</html>

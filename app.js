@@ -1301,7 +1301,89 @@ class PureAudioPlayer {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  addCustomTrack(url, sourceTitle = '') {
+  async fetchYouTubeVideoDetails(ytId) {
+    try {
+      const oembedUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${ytId}`;
+      const res = await fetch(oembedUrl);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          title: data.title || `YouTube Track (${ytId})`,
+          artist: data.author_name || 'YouTube Audio'
+        };
+      }
+    } catch (e) {}
+    return { title: `YouTube Track (${ytId})`, artist: 'YouTube Audio' };
+  }
+
+  async fetchYouTubePlaylistTracks(playlistId) {
+    // 1. Try public Invidious instances for full tracklist
+    const invidiousInstances = [
+      'https://inv.nadeko.net',
+      'https://invidious.nerdvpn.de',
+      'https://yt.drgnz.club',
+      'https://invidious.jing.rocks',
+      'https://vid.priv.au'
+    ];
+
+    for (const host of invidiousInstances) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${host}/api/v1/playlists/${playlistId}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+            return data.videos.map(v => ({
+              title: v.title || 'Untitled Track',
+              artist: v.author || data.title || 'YouTube Audio',
+              duration: v.lengthSeconds || 210,
+              ytId: v.videoId
+            })).filter(t => t.ytId);
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 2. Try Piped API instances
+    const pipedInstances = [
+      'https://pipedapi.kavin.rocks',
+      'https://api.piped.privacydev.net'
+    ];
+
+    for (const host of pipedInstances) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${host}/playlists/${playlistId}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.relatedStreams) && data.relatedStreams.length > 0) {
+            return data.relatedStreams.map(s => {
+              const idMatch = (s.url || '').match(/v=([\w-]{11})/);
+              const ytId = idMatch ? idMatch[1] : (s.id || null);
+              return {
+                title: s.title || 'Untitled Track',
+                artist: s.uploaderName || data.name || 'YouTube Audio',
+                duration: s.duration || 210,
+                ytId: ytId
+              };
+            }).filter(t => t.ytId);
+          }
+        }
+      } catch (err) {}
+    }
+
+    return [];
+  }
+
+  async addCustomTrack(url, sourceTitle = '') {
     if (!url || !url.trim()) {
       this.showFeedback('Please paste a valid YouTube or audio URL.', true);
       return false;
@@ -1311,67 +1393,117 @@ class PureAudioPlayer {
     let ytId = null;
     let isPlaylist = false;
     let playlistId = null;
-    let trackTitle = sourceTitle;
-    let trackArtist = 'Custom Stream';
 
     // 1. YouTube Playlist URL
     const listMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
     if (listMatch) {
       playlistId = listMatch[1];
       isPlaylist = true;
-      if (!trackTitle) trackTitle = `YouTube Playlist (${playlistId.substring(0, 10)})`;
-      trackArtist = 'YouTube Playlist Stream';
     }
 
     // 2. YouTube Single Video URL (watch, youtu.be, shorts, embed, music)
     const ytVideoMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
     if (ytVideoMatch) {
       ytId = ytVideoMatch[1];
-      if (!trackTitle && !isPlaylist) {
-        trackTitle = `YouTube Track (${ytId})`;
-      }
-      trackArtist = 'YouTube Audio';
     }
 
     // 3. Direct Audio Stream URL
     const isDirectAudio = url.match(/\.(mp3|wav|ogg|m4a|aac)($|\?)/i) || (!ytId && !isPlaylist && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')));
-    if (!ytId && !isPlaylist && isDirectAudio) {
-      if (!trackTitle) {
-        const filename = url.split('/').pop().split('?')[0];
-        trackTitle = decodeURIComponent(filename) || 'Custom Audio Stream';
-      }
-      trackArtist = 'Direct Audio Stream';
-    }
 
     if (!ytId && !isPlaylist && !isDirectAudio) {
       this.showFeedback('Unsupported URL format. Please paste a valid YouTube or audio link.', true);
       return false;
     }
 
-    const newTrack = {
-      title: trackTitle,
-      artist: trackArtist,
-      duration: 210,
-      ytId: isPlaylist ? `videoseries?list=${playlistId}` : ytId,
-      playlistId: isPlaylist ? playlistId : null,
-      audioUrl: (!ytId && !isPlaylist) ? url : null
-    };
+    this.showFeedback('Fetching track & playlist details...', false);
 
-    SOUNDTRACK_PLAYLISTS['custom'].tracks.unshift(newTrack);
-    this.saveCustomTracks();
-    this.updateCustomTabBadge();
+    // Case A: YouTube Playlist — extract individual videos
+    if (isPlaylist && playlistId) {
+      const fetchedTracks = await this.fetchYouTubePlaylistTracks(playlistId);
+      if (fetchedTracks && fetchedTracks.length > 0) {
+        // Add all individual fetched tracks to custom list
+        SOUNDTRACK_PLAYLISTS['custom'].tracks = [...fetchedTracks, ...SOUNDTRACK_PLAYLISTS['custom'].tracks];
+        this.saveCustomTracks();
+        this.updateCustomTabBadge();
 
-    // Switch to Custom Tab and load track
-    document.querySelectorAll('.playlist-tab-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.playlist === 'custom');
-    });
+        this.switchPlaylist('custom');
+        this.renderTracklist();
+        this.loadTrack(0);
+        this.play();
 
-    this.switchPlaylist('custom');
-    this.loadTrack(0);
-    this.play();
+        this.showFeedback(`✓ Fetched ${fetchedTracks.length} songs from playlist! Play any song in any order.`, false);
+        return true;
+      } else {
+        // Fallback: single playlist container if external mirror APIs are unreachable
+        const newTrack = {
+          title: sourceTitle || `YouTube Playlist (${playlistId.substring(0, 10)})`,
+          artist: 'YouTube Playlist Stream',
+          duration: 210,
+          ytId: `videoseries?list=${playlistId}`,
+          playlistId: playlistId,
+          audioUrl: null
+        };
+        SOUNDTRACK_PLAYLISTS['custom'].tracks.unshift(newTrack);
+        this.saveCustomTracks();
+        this.updateCustomTabBadge();
+        this.switchPlaylist('custom');
+        this.loadTrack(0);
+        this.play();
+        this.showFeedback(`Loaded YouTube Playlist: ${newTrack.title}`, false);
+        return true;
+      }
+    }
 
-    this.showFeedback(`Playing: ${trackTitle}`, false);
-    return true;
+    // Case B: Single YouTube Video
+    if (ytId) {
+      const meta = await this.fetchYouTubeVideoDetails(ytId);
+      const newTrack = {
+        title: sourceTitle || meta.title || `YouTube Track (${ytId})`,
+        artist: meta.artist || 'YouTube Audio',
+        duration: 210,
+        ytId: ytId,
+        playlistId: null,
+        audioUrl: null
+      };
+
+      SOUNDTRACK_PLAYLISTS['custom'].tracks.unshift(newTrack);
+      this.saveCustomTracks();
+      this.updateCustomTabBadge();
+
+      this.switchPlaylist('custom');
+      this.loadTrack(0);
+      this.play();
+
+      this.showFeedback(`✓ Added: ${newTrack.title}`, false);
+      return true;
+    }
+
+    // Case C: Direct Audio Stream
+    if (isDirectAudio) {
+      const filename = url.split('/').pop().split('?')[0];
+      const trackTitle = sourceTitle || decodeURIComponent(filename) || 'Custom Audio Stream';
+      const newTrack = {
+        title: trackTitle,
+        artist: 'Direct Audio Stream',
+        duration: 210,
+        ytId: null,
+        playlistId: null,
+        audioUrl: url
+      };
+
+      SOUNDTRACK_PLAYLISTS['custom'].tracks.unshift(newTrack);
+      this.saveCustomTracks();
+      this.updateCustomTabBadge();
+
+      this.switchPlaylist('custom');
+      this.loadTrack(0);
+      this.play();
+
+      this.showFeedback(`✓ Added: ${trackTitle}`, false);
+      return true;
+    }
+
+    return false;
   }
 
   deleteCustomTrack(index) {
@@ -1611,57 +1743,661 @@ class PureAudioPlayer {
   }
 }
 
-// Quick Focus Mode Timer (Beside Player Dock)
-class QuickFocusController {
+// ==========================================================================
+// 6. COZYLOCK EXTENSION BRIDGE & FOCUS TIMER CONTROLLER
+// ==========================================================================
+
+const DEFAULT_WHITELIST_DOMAINS = [
+  'github.com',
+  'stackoverflow.com',
+  'wikipedia.org',
+  'notion.so',
+  'docs.google.com',
+  'chatgpt.com',
+  'claude.ai',
+  'figma.com',
+  'canvas.instructure.com',
+  'google.com',
+  'youtube.com'
+];
+
+function playFocusCompletionChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    // Harmonic Tibetan singing bowl chime (A4, E5, A5, C#6)
+    const freqs = [440, 659.25, 880, 1108.73];
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+      gain.gain.setValueAtTime(0.0001, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.2 / (idx + 1), now + idx * 0.08 + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 3.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 3.3);
+    });
+  } catch (e) {
+    console.warn('Audio chime error:', e);
+  }
+}
+
+class CozyFocusController {
   constructor() {
-    this.btn = document.getElementById('quick-focus-btn');
+    this.quickBtn = document.getElementById('quick-focus-btn');
+    this.resetBtn = document.getElementById('quick-focus-reset-btn');
     this.timeText = document.getElementById('quick-focus-timer-text');
     this.actionLabel = document.getElementById('quick-focus-action-label');
+
+    // Settings drawer elements
+    this.statusBadge = document.getElementById('cozylock-status-badge');
+    this.badgeDot = document.getElementById('cozylock-badge-dot');
+    this.badgeText = document.getElementById('cozylock-badge-text');
+    this.durationBadge = document.getElementById('focus-duration-badge');
+    this.durationPills = document.querySelectorAll('.focus-preset-pill');
+
+    this.whitelistCountBadge = document.getElementById('whitelist-count-badge');
+    this.whitelistChipsContainer = document.getElementById('whitelist-chips-container');
+    this.whitelistInput = document.getElementById('whitelist-input');
+    this.whitelistAddBtn = document.getElementById('whitelist-add-btn');
+    this.whitelistResetBtn = document.getElementById('whitelist-reset-btn');
+    this.whitelistFeedback = document.getElementById('whitelist-feedback');
+
+    // PIN settings elements
+    this.cozyPinInput = document.getElementById('cozy-pin-input');
+    this.cozyPinSaveBtn = document.getElementById('cozy-pin-save-btn');
+    this.cozyPinFeedback = document.getElementById('cozy-pin-feedback');
+    this.pinSavedBadge = document.getElementById('pin-saved-badge');
+
+    // In-App PIN Unlock Modal elements
+    this.pinModalOverlay = document.getElementById('pin-modal-overlay');
+    this.modalPinInput = document.getElementById('modal-pin-input');
+    this.modalPinSubmitBtn = document.getElementById('modal-pin-submit-btn');
+    this.modalPinCancelBtn = document.getElementById('modal-pin-cancel-btn');
+    this.modalPinFeedback = document.getElementById('modal-pin-feedback');
+    this.pendingUnlockCallback = null;
+
+    // State
+    this.durationMinutes = parseInt(localStorage.getItem('cozylock_duration_mins') || '25', 10);
+    this.totalSeconds = this.durationMinutes * 60;
+    this.remainingSeconds = this.totalSeconds;
+    this.isRunning = false;
+    this.intervalId = null;
+    this.focusStartTime = null;
+
+    this.pin = String(localStorage.getItem('cozylock_pin') || '').trim();
+    this.whitelistedSites = this.loadWhitelist();
+    this.isExtensionConnected = false;
+
+    this.syncChannel = typeof BroadcastChannel !== 'undefined'
+      ? new BroadcastChannel('COZYLOCK_SYNC_CHANNEL')
+      : null;
+
     this.init();
   }
 
-  init() {
-    this.btn?.addEventListener('click', () => this.toggle());
+  loadWhitelist() {
+    try {
+      const stored = localStorage.getItem('cozylock_whitelist');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [...DEFAULT_WHITELIST_DOMAINS];
   }
 
+  saveWhitelist() {
+    localStorage.setItem('cozylock_whitelist', JSON.stringify(this.whitelistedSites));
+    this.renderWhitelistChips();
+    this.notifyExtensionWhitelist();
+  }
+
+  init() {
+    this.updateDisplay();
+    this.renderWhitelistChips();
+    this.setupDurationPills();
+    this.setupWhitelistHandlers();
+    this.setupPinHandlers();
+    this.setupModalHandlers();
+    this.setupExtensionBridge();
+
+    this.quickBtn?.addEventListener('click', () => this.toggle());
+    this.resetBtn?.addEventListener('click', () => this.handleResetClick());
+
+    // Send initial status check and start polling
+    this.sendActionToExtension('getStatus');
+    setInterval(() => this.sendActionToExtension('getStatus'), 2000);
+  }
+
+  setupDurationPills() {
+    this.durationPills.forEach(pill => {
+      const mins = parseInt(pill.dataset.minutes, 10);
+      pill.classList.toggle('active', mins === this.durationMinutes);
+      pill.addEventListener('click', () => {
+        if (this.isRunning) {
+          this.promptPinToUnlock(() => {
+            this.setDuration(mins, pill);
+          });
+        } else {
+          this.setDuration(mins, pill);
+        }
+      });
+    });
+
+    if (this.durationBadge) this.durationBadge.textContent = `${this.durationMinutes} min`;
+  }
+
+  setDuration(mins, pillElement) {
+    this.durationMinutes = mins;
+    localStorage.setItem('cozylock_duration_mins', mins);
+    this.totalSeconds = mins * 60;
+    this.remainingSeconds = this.totalSeconds;
+    this.updateDisplay();
+    this.durationPills.forEach(p => p.classList.toggle('active', p === pillElement));
+    if (this.durationBadge) this.durationBadge.textContent = `${mins} min`;
+  }
+
+  setupPinHandlers() {
+    if (this.cozyPinInput && this.pin) {
+      this.cozyPinInput.value = this.pin;
+    }
+    this.updatePinBadge();
+
+    // Strict numeric 4-digit input enforcement
+    this.cozyPinInput?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    const savePin = () => {
+      const val = (this.cozyPinInput?.value || '').replace(/\D/g, '').slice(0, 4);
+      if (!val) {
+        this.pin = '';
+        localStorage.removeItem('cozylock_pin');
+        this.sendActionToExtension('syncPin', { pin: '' });
+        this.showPinFeedback('Safety PIN removed', false);
+        this.updatePinBadge();
+        return;
+      }
+
+      if (val.length !== 4) {
+        this.showPinFeedback('PIN must be exactly 4 numeric digits (e.g. 1234)', true);
+        return;
+      }
+
+      this.pin = val;
+      localStorage.setItem('cozylock_pin', val);
+      this.sendActionToExtension('syncPin', { pin: val });
+      this.showPinFeedback('✓ 4-digit Safety PIN saved & synchronized', false);
+      this.updatePinBadge();
+    };
+
+    this.cozyPinSaveBtn?.addEventListener('click', savePin);
+    this.cozyPinInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') savePin();
+    });
+  }
+
+  updatePinBadge() {
+    if (!this.pinSavedBadge) return;
+    if (this.pin && this.pin.length === 4) {
+      this.pinSavedBadge.textContent = 'Active (4-Digit)';
+      this.pinSavedBadge.style.color = '#34d399';
+    } else {
+      this.pinSavedBadge.textContent = 'Not Set';
+      this.pinSavedBadge.style.color = '#b8a6c4';
+    }
+  }
+
+  showPinFeedback(msg, isError = false) {
+    if (!this.cozyPinFeedback) return;
+    this.cozyPinFeedback.textContent = msg;
+    this.cozyPinFeedback.className = `whitelist-feedback ${isError ? 'error' : 'success'}`;
+    setTimeout(() => {
+      if (this.cozyPinFeedback) this.cozyPinFeedback.textContent = '';
+    }, 3500);
+  }
+
+  // ── PIN Unlock Modal Logic ──
+  setupModalHandlers() {
+    // Strict numeric 4-digit input enforcement
+    this.modalPinInput?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    this.modalPinCancelBtn?.addEventListener('click', () => this.closePinModal());
+    this.modalPinSubmitBtn?.addEventListener('click', () => this.verifyPinInput());
+    this.modalPinInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.verifyPinInput();
+      if (e.key === 'Escape') this.closePinModal();
+    });
+    this.pinModalOverlay?.addEventListener('click', (e) => {
+      if (e.target === this.pinModalOverlay) this.closePinModal();
+    });
+  }
+
+  promptPinToUnlock(onSuccess) {
+    // If no PIN is configured, proceed immediately
+    if (!this.pin || this.pin.trim().length !== 4) {
+      if (onSuccess) onSuccess();
+      return;
+    }
+
+    this.pendingUnlockCallback = onSuccess;
+    if (this.modalPinInput) this.modalPinInput.value = '';
+    if (this.modalPinFeedback) this.modalPinFeedback.textContent = '';
+    if (this.pinModalOverlay) this.pinModalOverlay.classList.add('open');
+    setTimeout(() => this.modalPinInput?.focus(), 50);
+  }
+
+  closePinModal() {
+    if (this.pinModalOverlay) this.pinModalOverlay.classList.remove('open');
+    this.pendingUnlockCallback = null;
+  }
+
+  verifyPinInput() {
+    const input = (this.modalPinInput?.value || '').replace(/\D/g, '').slice(0, 4);
+    if (!input || input.length !== 4) {
+      if (this.modalPinFeedback) this.modalPinFeedback.textContent = 'Please enter your 4-digit PIN';
+      return;
+    }
+
+    if (input === this.pin) {
+      const callback = this.pendingUnlockCallback;
+      this.closePinModal();
+      if (callback) callback();
+    } else {
+      if (this.modalPinFeedback) {
+        this.modalPinFeedback.textContent = 'Incorrect PIN. Focus Lock is still active.';
+      }
+      if (this.modalPinInput) {
+        this.modalPinInput.value = '';
+        this.modalPinInput.focus();
+      }
+    }
+  }
+
+  setupWhitelistHandlers() {
+    const addDomainFromInput = () => {
+      const val = this.whitelistInput?.value;
+      if (!val) return;
+      this.addDomain(val);
+      if (this.whitelistInput) this.whitelistInput.value = '';
+    };
+
+    this.whitelistAddBtn?.addEventListener('click', addDomainFromInput);
+    this.whitelistInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addDomainFromInput();
+    });
+
+    document.querySelectorAll('.preset-add-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const domain = chip.dataset.domain;
+        if (domain) this.addDomain(domain);
+      });
+    });
+
+    this.whitelistResetBtn?.addEventListener('click', () => {
+      if (confirm('Reset whitelist to default recommended study domains?')) {
+        this.whitelistedSites = [...DEFAULT_WHITELIST_DOMAINS];
+        this.saveWhitelist();
+        this.showWhitelistFeedback('Reset whitelist to default study sites', false);
+      }
+    });
+  }
+
+  cleanDomain(raw) {
+    if (!raw) return '';
+    return raw.toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/:.*$/, '')
+      .replace(/\/.*$/, '')
+      .trim();
+  }
+
+  addDomain(raw) {
+    const clean = this.cleanDomain(raw);
+    if (!clean || clean.length < 3 || !clean.includes('.')) {
+      this.showWhitelistFeedback('Please enter a valid domain (e.g. stackoverflow.com)', true);
+      return false;
+    }
+
+    if (this.whitelistedSites.includes(clean)) {
+      this.showWhitelistFeedback(`${clean} is already in your whitelist`, true);
+      return false;
+    }
+
+    this.whitelistedSites.push(clean);
+    this.saveWhitelist();
+    this.showWhitelistFeedback(`✓ Added ${clean} to allowed sites`, false);
+    return true;
+  }
+
+  removeDomain(domain) {
+    this.whitelistedSites = this.whitelistedSites.filter(d => d !== domain);
+    this.saveWhitelist();
+    this.showWhitelistFeedback(`Removed ${domain}`, false);
+  }
+
+  renderWhitelistChips() {
+    if (!this.whitelistChipsContainer) return;
+    this.whitelistChipsContainer.innerHTML = '';
+    if (this.whitelistCountBadge) this.whitelistCountBadge.textContent = String(this.whitelistedSites.length);
+
+    this.whitelistedSites.forEach(site => {
+      const chip = document.createElement('span');
+      chip.className = 'whitelist-tag-chip';
+      chip.innerHTML = `
+        <span>${site}</span>
+        <button class="tag-remove-btn" title="Remove ${site}">✕</button>
+      `;
+      chip.querySelector('.tag-remove-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeDomain(site);
+      });
+      this.whitelistChipsContainer.appendChild(chip);
+    });
+  }
+
+  showWhitelistFeedback(msg, isError = false) {
+    if (!this.whitelistFeedback) return;
+    this.whitelistFeedback.textContent = msg;
+    this.whitelistFeedback.className = `whitelist-feedback ${isError ? 'error' : 'success'}`;
+    setTimeout(() => {
+      if (this.whitelistFeedback) this.whitelistFeedback.textContent = '';
+    }, 3500);
+  }
+
+  // ── Extension Two-Way Communication Bridge ──
+  setupExtensionBridge() {
+    const handleIncomingState = (state) => {
+      if (!state) return;
+      this.isExtensionConnected = true;
+
+      // Sync safety PIN if present from extension
+      if (state.focusPIN && state.focusPIN.length === 4 && state.focusPIN !== this.pin) {
+        this.pin = String(state.focusPIN).replace(/\D/g, '').slice(0, 4);
+        localStorage.setItem('cozylock_pin', this.pin);
+        if (this.cozyPinInput) this.cozyPinInput.value = this.pin;
+        this.updatePinBadge();
+      }
+
+      if (state.active || state.isActive) {
+        // Extension or other tab has an active focus lock session running
+        const startTime = state.focusStartTime || Date.now();
+        const durationMs = state.focusDuration || (this.durationMinutes * 60 * 1000);
+        const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+        const totalSecs = Math.floor(durationMs / 1000);
+        const remaining = Math.max(0, totalSecs - elapsedSecs);
+
+        if (remaining > 0) {
+          this.focusStartTime = startTime;
+          this.totalSeconds = totalSecs;
+          this.remainingSeconds = remaining;
+          this.durationMinutes = Math.round(durationMs / 60000);
+          if (this.durationBadge) this.durationBadge.textContent = `${this.durationMinutes} min`;
+
+          this.updateDisplay();
+          this.quickBtn?.classList.add('running');
+          if (this.resetBtn) this.resetBtn.style.display = 'inline-flex';
+          if (this.actionLabel) this.actionLabel.textContent = 'Pause';
+          this.updateExtensionStatusUi(true);
+
+          if (!this.isRunning) {
+            this.isRunning = true;
+            this.startLocalTimerTick();
+          }
+        }
+      } else {
+        // Focus inactive
+        if (this.isRunning) {
+          this.isRunning = false;
+          if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+          }
+          this.focusStartTime = null;
+          this.remainingSeconds = this.totalSeconds;
+          this.updateDisplay();
+          this.quickBtn?.classList.remove('running');
+          if (this.actionLabel) this.actionLabel.textContent = 'Start';
+          if (this.resetBtn) this.resetBtn.style.display = 'none';
+          this.updateExtensionStatusUi(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', (event) => {
+      if (!event.data) return;
+      const { type, state } = event.data;
+      if (type === 'COZYLOCK_EXTENSION_STATE' || type === 'FOCUSNYX_EXTENSION_STATE') {
+        handleIncomingState(state);
+      }
+    });
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'cozylock_shared_timer_state' && event.newValue) {
+        try {
+          const data = JSON.parse(event.newValue);
+          handleIncomingState(data);
+        } catch {}
+      }
+    });
+
+    if (this.syncChannel) {
+      this.syncChannel.onmessage = (event) => {
+        if (!event.data) return;
+        const { type, state } = event.data;
+        if (type === 'COZYLOCK_EXTENSION_STATE' || type === 'FOCUSNYX_EXTENSION_STATE') {
+          handleIncomingState(state);
+        }
+      };
+    }
+  }
+
+  updateExtensionStatusUi(isFocusActive) {
+    if (!this.badgeText || !this.badgeDot) return;
+    if (isFocusActive) {
+      this.badgeDot.className = 'cozylock-badge-dot locking';
+      this.badgeText.textContent = 'CozyLock: Focus Lock Active';
+    } else {
+      this.badgeDot.className = 'cozylock-badge-dot active';
+      this.badgeText.textContent = 'CozyLock: Connected & Ready';
+    }
+  }
+
+  sendActionToExtension(action, extraPayload = {}) {
+    const payload = {
+      type: 'COZYLOCK_WEB_APP_ACTION',
+      action,
+      durationMinutes: this.durationMinutes,
+      allowedUrls: this.whitelistedSites,
+      pin: this.pin,
+      focusStartTime: this.focusStartTime || Date.now(),
+      timestamp: Date.now(),
+      ...extraPayload
+    };
+
+    window.postMessage(payload, '*');
+    if (this.syncChannel) {
+      try { this.syncChannel.postMessage(payload); } catch {}
+    }
+    try {
+      localStorage.setItem('cozylock_app_focus_state', JSON.stringify({
+        action,
+        durationMinutes: this.durationMinutes,
+        allowedUrls: this.whitelistedSites,
+        pin: this.pin,
+        focusStartTime: this.focusStartTime || Date.now(),
+        timestamp: Date.now(),
+        ...extraPayload
+      }));
+    } catch {}
+  }
+
+  notifyExtensionWhitelist() {
+    this.sendActionToExtension('updateWhitelist', { allowedUrls: this.whitelistedSites });
+  }
+
+  // ── Timer State & Execution ──
   toggle() {
-    if (appState.quickFocus.isRunning) this.pause();
-    else this.start();
+    if (this.isRunning) {
+      this.promptPinToUnlock(() => this.pause());
+    } else {
+      this.start();
+    }
+  }
+
+  handleResetClick() {
+    if (this.isRunning || this.remainingSeconds < this.totalSeconds) {
+      this.promptPinToUnlock(() => this.reset());
+    } else {
+      this.reset();
+    }
   }
 
   start() {
-    appState.quickFocus.isRunning = true;
-    this.btn?.classList.add('running');
+    this.isRunning = true;
+    this.focusStartTime = Date.now();
+    this.quickBtn?.classList.add('running');
+    if (this.resetBtn) this.resetBtn.style.display = 'inline-flex';
     if (this.actionLabel) this.actionLabel.textContent = 'Pause';
 
-    appState.quickFocus.intervalId = setInterval(() => {
-      appState.quickFocus.remainingSeconds--;
+    // Instant local storage sync
+    try {
+      localStorage.setItem('cozylock_shared_timer_state', JSON.stringify({
+        active: true,
+        focusStartTime: this.focusStartTime,
+        focusDuration: this.totalSeconds * 1000,
+        pin: this.pin,
+        allowedUrls: this.whitelistedSites,
+        timestamp: Date.now()
+      }));
+    } catch {}
+
+    // Broadcast focus start to extension with start timestamp and PIN
+    this.sendActionToExtension('startFocus', {
+      durationMinutes: Math.ceil(this.remainingSeconds / 60),
+      focusStartTime: this.focusStartTime,
+      pin: this.pin
+    });
+    this.updateExtensionStatusUi(true);
+
+    this.startLocalTimerTick();
+  }
+
+  startLocalTimerTick() {
+    if (this.intervalId) clearInterval(this.intervalId);
+    this.intervalId = setInterval(() => {
+      if (this.focusStartTime) {
+        const elapsed = Math.floor((Date.now() - this.focusStartTime) / 1000);
+        this.remainingSeconds = Math.max(0, this.totalSeconds - elapsed);
+      } else {
+        this.remainingSeconds--;
+      }
+
       this.updateDisplay();
 
-      if (appState.quickFocus.remainingSeconds <= 0) {
+      if (this.remainingSeconds <= 0) {
         this.complete();
       }
     }, 1000);
   }
 
   pause() {
-    appState.quickFocus.isRunning = false;
-    this.btn?.classList.remove('running');
+    this.isRunning = false;
+    this.quickBtn?.classList.remove('running');
     if (this.actionLabel) this.actionLabel.textContent = 'Resume';
-    if (appState.quickFocus.intervalId) clearInterval(appState.quickFocus.intervalId);
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    this.focusStartTime = null;
+
+    try {
+      localStorage.setItem('cozylock_shared_timer_state', JSON.stringify({
+        active: false,
+        focusStartTime: null,
+        focusDuration: null,
+        pin: this.pin,
+        timestamp: Date.now()
+      }));
+    } catch {}
+
+    // Release extension block with PIN
+    this.sendActionToExtension('pauseFocus', { pin: this.pin });
+    this.updateExtensionStatusUi(false);
+  }
+
+  reset() {
+    this.isRunning = false;
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    this.focusStartTime = null;
+    this.remainingSeconds = this.totalSeconds;
+    this.updateDisplay();
+    this.quickBtn?.classList.remove('running');
+    if (this.actionLabel) this.actionLabel.textContent = 'Start';
+    if (this.resetBtn) this.resetBtn.style.display = 'none';
+
+    try {
+      localStorage.setItem('cozylock_shared_timer_state', JSON.stringify({
+        active: false,
+        focusStartTime: null,
+        focusDuration: null,
+        pin: this.pin,
+        timestamp: Date.now()
+      }));
+    } catch {}
+
+    this.sendActionToExtension('endFocus', { pin: this.pin });
+    this.updateExtensionStatusUi(false);
   }
 
   complete() {
-    this.pause();
-    appState.quickFocus.remainingSeconds = 25 * 60;
+    this.isRunning = false;
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    this.focusStartTime = null;
+    this.remainingSeconds = this.totalSeconds;
     this.updateDisplay();
+    this.quickBtn?.classList.remove('running');
     if (this.actionLabel) this.actionLabel.textContent = 'Start';
-    playChimeBell();
+    if (this.resetBtn) this.resetBtn.style.display = 'none';
+
+    try {
+      localStorage.setItem('cozylock_shared_timer_state', JSON.stringify({
+        active: false,
+        focusStartTime: null,
+        focusDuration: null,
+        pin: this.pin,
+        timestamp: Date.now()
+      }));
+    } catch {}
+
+    this.sendActionToExtension('endFocus', { pin: this.pin });
+    this.updateExtensionStatusUi(false);
+
+    playFocusCompletionChime();
   }
 
   updateDisplay() {
-    const mins = Math.floor(appState.quickFocus.remainingSeconds / 60);
-    const secs = appState.quickFocus.remainingSeconds % 60;
+    const mins = Math.floor(Math.max(0, this.remainingSeconds) / 60);
+    const secs = Math.max(0, this.remainingSeconds) % 60;
     const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     if (this.timeText) this.timeText.textContent = formatted;
   }
@@ -1688,7 +2424,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const weatherEngine = new WeatherCanvasEngine('weather-canvas');
   window.weatherEngineInstance = weatherEngine;
   const audioPlayer = new PureAudioPlayer();
-  const focusController = new QuickFocusController();
+  const focusController = new CozyFocusController();
 
   updateClock();
   setInterval(updateClock, 1000);
