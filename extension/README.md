@@ -1,16 +1,39 @@
-# CozyLock — Cozy Corner Browser Extension
+# CozyLock — Cozy Corner Browser Extension (v2.0)
 
-Browser-level focus lock companion for [Cozy Corner](https://cozyycorner.vercel.app/).
+Official browser-level focus lock companion extension for [Cozy Corner](https://cozyycorner.vercel.app/).
 
-## Capabilities
-- Enforce website blocking while Cozy Corner Focus Timer is active
-- Allow access exclusively to user-customized whitelist sites set in the Cozy Corner Settings Drawer
-- Redirect distraction attempts to CozyLock's atmospheric focus sanctuary screen
-- Two-way live synchronization with Cozy Corner study timer sessions via BroadcastChannel & window messaging
+---
 
-## Development
+## 🔒 Capabilities
+
+- **Bidirectional 0ms Real-Time Timer Sync**: Seamless two-way synchronization with the Cozy Corner web app study timer via `window.postMessage`, `BroadcastChannel`, and `chrome.storage`.
+- **Browser-Wide Focus Lock**: Intercepts and blocks non-whitelisted distracting websites across all active tabs and new navigations.
+- **Immediate Open Tab Redirection**: Existing tabs on distracting domains are instantly redirected to `blocked.html` upon starting a focus session.
+- **Custom Whitelist Management**: Fully customizable allowed domains synced live with the Cozy Corner Settings Drawer.
+- **4-Digit Safety PIN Early Unlock**: Enforces discipline by requiring a 4-digit Safety PIN entered in a sleek, in-popup modal (zero native browser alerts/prompts).
+- **Atmospheric Block Screen**: Cozy ambient block screen with automatic redirect countdown back to Cozy Corner.
+
+---
+
+## 🛠️ Development & Building
+
 ```bash
+# Install dependencies
 npm install
+
+# Build extension bundles & release ZIPs
 npm run build
+
+# Watch mode for live development
+npm run dev
 ```
-Load the `extension/` folder in Chrome via `chrome://extensions` (Developer Mode > Load Unpacked).
+
+The build script compiles TypeScript entry points with `esbuild` into `dist/` and automatically generates `CozyLock-Chrome-Extension.zip` in the root workspace.
+
+---
+
+## 📦 Loading in Chrome
+
+1. Navigate to `chrome://extensions/`.
+2. Turn on **Developer mode** in the top right.
+3. Click **Load unpacked** and choose this `extension` directory (or the extracted `CozyLock-Chrome-Extension.zip`).
