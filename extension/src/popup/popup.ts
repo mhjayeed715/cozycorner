@@ -50,9 +50,17 @@ const pinInput = document.getElementById("pinInput") as HTMLInputElement;
 const savePinBtn = document.getElementById("savePinBtn") as HTMLButtonElement;
 const pinStatusText = document.getElementById("pinStatusText")!;
 
+// PIN Unlock Modal Elements
+const popupPinModal = document.getElementById("popupPinModal")!;
+const popupModalPinInput = document.getElementById("popupModalPinInput") as HTMLInputElement;
+const popupModalPinFeedback = document.getElementById("popupModalPinFeedback")!;
+const popupModalPinCancelBtn = document.getElementById("popupModalPinCancelBtn") as HTMLButtonElement;
+const popupModalPinSubmitBtn = document.getElementById("popupModalPinSubmitBtn") as HTMLButtonElement;
+
 function init() {
   setupTabs();
   setupEventListeners();
+  setupPinModal();
 
   // Instant 0ms cache-first rendering
   loadSavedSettings();
@@ -97,7 +105,7 @@ function setupEventListeners() {
   });
 
   focusBtn?.addEventListener("click", startFocus);
-  stopFocusBtn?.addEventListener("click", stopFocus);
+  stopFocusBtn?.addEventListener("click", promptStopFocus);
   openAppBtn?.addEventListener("click", openCozyCornerTab);
 
   // Strict 4-digit PIN input sanitization
@@ -109,10 +117,17 @@ function setupEventListeners() {
     const pin = (pinInput?.value || "").replace(/\D/g, "").slice(0, 4);
     if (pin.length === 4) {
       savedEmergencyPin = pin;
-      chrome.storage.local.set({ pin });
-      chrome.runtime.sendMessage({ action: "syncPin", pin });
+      chrome.storage?.local?.set({ pin });
+      chrome.runtime?.sendMessage({ action: "syncPin", pin });
       pinStatusText.textContent = "✓ 4-digit Safety PIN saved";
       pinStatusText.style.color = "#34d399";
+      setTimeout(() => { pinStatusText.textContent = ""; }, 2500);
+    } else if (pin.length === 0) {
+      savedEmergencyPin = "";
+      chrome.storage?.local?.remove("pin");
+      chrome.runtime?.sendMessage({ action: "syncPin", pin: "" });
+      pinStatusText.textContent = "Safety PIN removed";
+      pinStatusText.style.color = "#b8a6c4";
       setTimeout(() => { pinStatusText.textContent = ""; }, 2500);
     } else {
       pinStatusText.textContent = "Please enter exactly 4 numeric digits";
@@ -122,9 +137,65 @@ function setupEventListeners() {
   });
 }
 
+function setupPinModal() {
+  popupModalPinInput?.addEventListener("input", (e: any) => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+  });
+
+  popupModalPinCancelBtn?.addEventListener("click", () => {
+    closePinModal();
+  });
+
+  popupModalPinSubmitBtn?.addEventListener("click", () => {
+    verifyPinAndUnlock();
+  });
+
+  popupModalPinInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") verifyPinAndUnlock();
+    if (e.key === "Escape") closePinModal();
+  });
+
+  popupPinModal?.addEventListener("click", (e) => {
+    if (e.target === popupPinModal) closePinModal();
+  });
+}
+
+function openPinModal() {
+  if (popupModalPinInput) popupModalPinInput.value = "";
+  if (popupModalPinFeedback) popupModalPinFeedback.textContent = "";
+  if (popupPinModal) popupPinModal.style.display = "flex";
+  setTimeout(() => popupModalPinInput?.focus(), 50);
+}
+
+function closePinModal() {
+  if (popupPinModal) popupPinModal.style.display = "none";
+}
+
+function verifyPinAndUnlock() {
+  const entered = (popupModalPinInput?.value || "").replace(/\D/g, "").slice(0, 4);
+  if (!entered || entered.length !== 4) {
+    if (popupModalPinFeedback) popupModalPinFeedback.textContent = "Please enter your 4-digit PIN";
+    return;
+  }
+
+  if (savedEmergencyPin && entered !== savedEmergencyPin) {
+    if (popupModalPinFeedback) {
+      popupModalPinFeedback.textContent = "Incorrect PIN. Focus Lock is active.";
+    }
+    if (popupModalPinInput) {
+      popupModalPinInput.value = "";
+      popupModalPinInput.focus();
+    }
+    return;
+  }
+
+  closePinModal();
+  executeReleaseFocus(entered);
+}
+
 function loadSavedSettings() {
   // Read local storage immediately for 0ms render
-  chrome.storage.local.get(["focusState", "pin", "cozylockWhitelist", "pendingEvents"], (result: any) => {
+  chrome.storage?.local?.get(["focusState", "pin", "cozylockWhitelist", "pendingEvents"], (result: any) => {
     if (result.pin) {
       savedEmergencyPin = String(result.pin).replace(/\D/g, "").slice(0, 4);
       if (pinInput) pinInput.value = savedEmergencyPin;
@@ -178,8 +249,8 @@ function renderWhitelistPreview() {
 }
 
 function checkFocusStatus() {
-  chrome.runtime.sendMessage({ action: "getStatus" }, (response: FocusState & { isActive?: boolean; remainingTime?: number }) => {
-    if (chrome.runtime.lastError || !response) return;
+  chrome.runtime?.sendMessage({ action: "getStatus" }, (response: FocusState & { isActive?: boolean; remainingTime?: number }) => {
+    if (chrome.runtime?.lastError || !response) return;
     if (response.isActive || response.active) {
       focusActive = true;
       if (response.focusPIN) savedEmergencyPin = String(response.focusPIN).replace(/\D/g, "").slice(0, 4);
@@ -187,7 +258,12 @@ function checkFocusStatus() {
       currentDuration = response.focusDuration || currentDuration || selectedDuration;
       const elapsed = Date.now() - currentStartTime!;
       const remainingMs = Math.max(0, currentDuration - elapsed);
-      updateUIForActive(remainingMs);
+      if (remainingMs > 0) {
+        updateUIForActive(remainingMs);
+      } else {
+        focusActive = false;
+        updateUIForInactive();
+      }
     } else {
       focusActive = false;
       updateUIForInactive();
@@ -201,9 +277,9 @@ function startStatusPolling() {
   statusPollInterval = setInterval(checkFocusStatus, 1000);
 }
 
-chrome.storage.onChanged.addListener((changes: any, area: string) => {
+chrome.storage?.onChanged?.addListener((changes: any, area: string) => {
   if (area !== "local") return;
-  if (changes.pin?.newValue) {
+  if (changes.pin?.newValue !== undefined) {
     savedEmergencyPin = String(changes.pin.newValue).replace(/\D/g, "").slice(0, 4);
     if (pinInput) pinInput.value = savedEmergencyPin;
   }
@@ -220,7 +296,12 @@ chrome.storage.onChanged.addListener((changes: any, area: string) => {
       currentDuration = newState.focusDuration || selectedDuration;
       if (newState.focusPIN) savedEmergencyPin = String(newState.focusPIN).replace(/\D/g, "").slice(0, 4);
       const remainingMs = Math.max(0, currentDuration - (Date.now() - currentStartTime!));
-      updateUIForActive(remainingMs);
+      if (remainingMs > 0) {
+        updateUIForActive(remainingMs);
+      } else {
+        focusActive = false;
+        updateUIForInactive();
+      }
     } else {
       focusActive = false;
       updateUIForInactive();
@@ -288,7 +369,10 @@ function startFocus() {
   currentStartTime = startTime;
   currentDuration = selectedDuration;
 
-  chrome.runtime.sendMessage(
+  focusActive = true;
+  updateUIForActive(selectedDuration);
+
+  chrome.runtime?.sendMessage(
     {
       action: "startFocus",
       duration: selectedDuration,
@@ -297,38 +381,39 @@ function startFocus() {
       focusStartTime: startTime,
     },
     (res: any) => {
-      if (chrome.runtime.lastError) return;
+      if (chrome.runtime?.lastError) return;
       if (res && res.success) {
         focusActive = true;
         updateUIForActive(selectedDuration);
-        openCozyCornerTab();
       }
     }
   );
 }
 
-function stopFocus() {
+function promptStopFocus() {
   if (savedEmergencyPin && savedEmergencyPin.trim().length === 4) {
-    const entered = prompt("Enter your 4-digit Safety PIN to release Focus Lock early:");
-    if (!entered) return;
-    const cleanPin = entered.replace(/\D/g, "").slice(0, 4);
-    if (cleanPin !== savedEmergencyPin) {
-      alert("Incorrect PIN. Focus session cannot be stopped without the 4-digit PIN.");
-      return;
-    }
+    openPinModal();
+  } else {
+    executeReleaseFocus("");
   }
+}
 
-  chrome.runtime.sendMessage(
+function executeReleaseFocus(pin: string) {
+  chrome.runtime?.sendMessage(
     {
       action: "endFocus",
-      pin: savedEmergencyPin,
+      pin: pin || savedEmergencyPin,
     },
     (res: any) => {
       if (res && res.success) {
         focusActive = false;
         updateUIForInactive();
       } else {
-        alert(res?.message || "Failed to release focus lock.");
+        // If failed due to PIN mismatch, open PIN modal
+        openPinModal();
+        if (popupModalPinFeedback) {
+          popupModalPinFeedback.textContent = res?.message || "Incorrect Safety PIN.";
+        }
       }
     }
   );
@@ -336,9 +421,9 @@ function stopFocus() {
 
 function openCozyCornerTab() {
   const targetHost = "https://cozyycorner.vercel.app/";
-  chrome.tabs.query({}, (tabs: any[]) => {
-    const existing = tabs.find((t) =>
-      t.url && (t.url.includes("cozyycorner.vercel.app") || t.url.includes("localhost") || t.url.includes("127.0.0.1"))
+  chrome.tabs?.query({}, (tabs: any[]) => {
+    const existing = tabs?.find((t) =>
+      t.url && (t.url.includes("cozyycorner.vercel.app") || t.url.includes("localhost") || t.url.includes("127.0.0.1") || t.url.includes("cozyplay"))
     );
     if (existing?.id) {
       chrome.tabs.update(existing.id, { active: true });

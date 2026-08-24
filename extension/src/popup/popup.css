@@ -6,7 +6,7 @@
 
 html, body {
   width: 320px;
-  min-height: 420px;
+  min-height: 430px;
   max-width: 320px;
   background: #0e0a12;
   color: #fdf4f8;
@@ -16,6 +16,7 @@ html, body {
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 
 .container {
@@ -23,6 +24,8 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+  min-height: 430px;
 }
 
 /* Header */
@@ -176,8 +179,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(244, 114, 182, 0.15) 0%, rgba(20, 14, 28, 0.8) 100%);
   border: 2px solid #f472b6;
@@ -186,10 +189,11 @@ html, body {
 }
 
 .timer-circle span {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #fdf4f8;
+  letter-spacing: 0.5px;
 }
 
 #timerLabel {
@@ -366,4 +370,134 @@ html, body {
   font-size: 10.5px;
   padding: 3px 8px;
   border-radius: 9999px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   IN-POPUP PIN MODAL (Sleek Glassmorphism Modal)
+   ════════════════════════════════════════════════════════════════ */
+.popup-pin-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 6, 13, 0.88);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.popup-pin-card {
+  background: rgba(26, 16, 34, 0.95);
+  border: 1px solid rgba(244, 114, 182, 0.35);
+  border-radius: 18px;
+  padding: 20px 16px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(244, 114, 182, 0.2);
+}
+
+.popup-pin-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 10px rgba(244, 114, 182, 0.5));
+}
+
+.popup-pin-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fdf4f8;
+  margin-bottom: 4px;
+}
+
+.popup-pin-desc {
+  font-size: 11px;
+  color: #b8a6c4;
+  line-height: 1.4;
+  margin-bottom: 14px;
+}
+
+.popup-pin-input-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.popup-modal-pin-input {
+  width: 130px;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 6px;
+  padding: 8px 12px;
+  background: rgba(14, 9, 20, 0.9);
+  border: 1.5px solid rgba(244, 114, 182, 0.4);
+  border-radius: 10px;
+  color: #fdf4f8;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.popup-modal-pin-input:focus {
+  border-color: #f472b6;
+  box-shadow: 0 0 15px rgba(244, 114, 182, 0.4);
+}
+
+.popup-pin-feedback {
+  font-size: 11px;
+  min-height: 16px;
+  margin-bottom: 12px;
+  color: #fda4af;
+  font-weight: 600;
+}
+
+.popup-pin-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pin-cancel-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #b8a6c4;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 8px 6px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pin-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fdf4f8;
+}
+
+.pin-unlock-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 8px 6px;
+  border-radius: 9px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.3);
+  transition: all 0.15s ease;
+}
+
+.pin-unlock-btn:hover {
+  box-shadow: 0 0 18px rgba(244, 114, 182, 0.5);
+  transform: translateY(-1px);
 }

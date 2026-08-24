@@ -1905,6 +1905,7 @@ class CozyFocusController {
     this.updateDisplay();
     this.durationPills.forEach(p => p.classList.toggle('active', p === pillElement));
     if (this.durationBadge) this.durationBadge.textContent = `${mins} min`;
+    this.sendActionToExtension('updateDuration', { durationMinutes: mins, duration: mins * 60 * 1000 });
   }
 
   setupPinHandlers() {
@@ -2144,8 +2145,12 @@ class CozyFocusController {
           this.focusStartTime = startTime;
           this.totalSeconds = totalSecs;
           this.remainingSeconds = remaining;
-          this.durationMinutes = Math.round(durationMs / 60000);
+          this.durationMinutes = Math.round(durationMs / 60000) || this.durationMinutes;
           if (this.durationBadge) this.durationBadge.textContent = `${this.durationMinutes} min`;
+          this.durationPills.forEach(p => {
+            const mins = parseInt(p.dataset.minutes, 10);
+            p.classList.toggle('active', mins === this.durationMinutes);
+          });
 
           this.updateDisplay();
           this.quickBtn?.classList.add('running');
@@ -2159,8 +2164,9 @@ class CozyFocusController {
           }
         }
       } else {
-        // Focus inactive
-        if (this.isRunning) {
+        // Focus inactive: avoid stale getStatus responses cancelling a freshly started local session
+        const isLocallyJustStarted = this.focusStartTime && (Date.now() - this.focusStartTime < 3000);
+        if (this.isRunning && !isLocallyJustStarted) {
           this.isRunning = false;
           if (this.intervalId) {
             clearInterval(this.intervalId);
@@ -2172,6 +2178,8 @@ class CozyFocusController {
           this.quickBtn?.classList.remove('running');
           if (this.actionLabel) this.actionLabel.textContent = 'Start';
           if (this.resetBtn) this.resetBtn.style.display = 'none';
+          this.updateExtensionStatusUi(false);
+        } else if (!this.isRunning) {
           this.updateExtensionStatusUi(false);
         }
       }
@@ -2212,7 +2220,9 @@ class CozyFocusController {
       this.badgeText.textContent = 'CozyLock: Focus Lock Active';
     } else {
       this.badgeDot.className = 'cozylock-badge-dot active';
-      this.badgeText.textContent = 'CozyLock: Connected & Ready';
+      this.badgeText.textContent = this.isExtensionConnected
+        ? 'CozyLock: Connected & Ready'
+        : 'CozyLock: Companion Ready';
     }
   }
 
@@ -2221,6 +2231,7 @@ class CozyFocusController {
       type: 'COZYLOCK_WEB_APP_ACTION',
       action,
       durationMinutes: this.durationMinutes,
+      duration: this.totalSeconds * 1000,
       allowedUrls: this.whitelistedSites,
       pin: this.pin,
       focusStartTime: this.focusStartTime || Date.now(),
@@ -2236,6 +2247,7 @@ class CozyFocusController {
       localStorage.setItem('cozylock_app_focus_state', JSON.stringify({
         action,
         durationMinutes: this.durationMinutes,
+        duration: this.totalSeconds * 1000,
         allowedUrls: this.whitelistedSites,
         pin: this.pin,
         focusStartTime: this.focusStartTime || Date.now(),
@@ -2269,6 +2281,8 @@ class CozyFocusController {
   start() {
     this.isRunning = true;
     this.focusStartTime = Date.now();
+    this.totalSeconds = this.durationMinutes * 60;
+    this.remainingSeconds = this.totalSeconds;
     this.quickBtn?.classList.add('running');
     if (this.resetBtn) this.resetBtn.style.display = 'inline-flex';
     if (this.actionLabel) this.actionLabel.textContent = 'Pause';
@@ -2285,10 +2299,12 @@ class CozyFocusController {
       }));
     } catch {}
 
-    // Broadcast focus start to extension with start timestamp and PIN
+    // Broadcast focus start to extension with start timestamp, allowed sites and PIN
     this.sendActionToExtension('startFocus', {
-      durationMinutes: Math.ceil(this.remainingSeconds / 60),
+      durationMinutes: this.durationMinutes,
+      duration: this.totalSeconds * 1000,
       focusStartTime: this.focusStartTime,
+      allowedUrls: this.whitelistedSites,
       pin: this.pin
     });
     this.updateExtensionStatusUi(true);

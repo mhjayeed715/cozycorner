@@ -1,7 +1,47 @@
 (function () {
+  // ── Bulletproof Cozy Corner App Detection ──
+  function isCozyAppPage(): boolean {
+    if (typeof window === "undefined" || !window.location) return false;
+    const href = (window.location.href || "").toLowerCase();
+    const host = (window.location.hostname || "").toLowerCase().replace(/^www\./, "");
+    const proto = (window.location.protocol || "").toLowerCase();
+
+    // 1. File protocol check for local dev
+    if (proto === "file:" && (href.includes("cozyplay") || href.includes("cozy") || href.includes("index.html"))) {
+      return true;
+    }
+
+    // 2. Localhost & loopback addresses on any port
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]") {
+      return true;
+    }
+
+    // 3. Vercel & custom deployment domains
+    if (host.includes("vercel.app") || host.includes("cozyycorner") || host.includes("cozyplay") || host.includes("cozycorner")) {
+      return true;
+    }
+
+    // 4. DOM markers
+    if (typeof document !== "undefined") {
+      if (
+        document.getElementById("cozylock-status-badge") ||
+        document.getElementById("nav-download-extension-btn") ||
+        document.getElementById("settings-drawer-overlay") ||
+        document.querySelector(".corner-title") ||
+        document.querySelector(".sanctuary-app")
+      ) {
+        return true;
+      }
+      if (document.title && document.title.toLowerCase().includes("cozy")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  const isApp = isCozyAppPage();
   const currentHost = window.location.hostname.toLowerCase().replace(/^www\./, "");
-  const COZY_APP_HOSTS = ["cozyycorner.vercel.app", "localhost", "127.0.0.1", "cozyplay"];
-  const isAppDomain = COZY_APP_HOSTS.some((h) => currentHost === h || currentHost.endsWith("." + h));
 
   const syncChannel = typeof BroadcastChannel !== "undefined"
     ? new BroadcastChannel("COZYLOCK_SYNC_CHANNEL")
@@ -20,25 +60,44 @@
   // ════════════════════════════════════════════════════════════════
   // ── APP DOMAIN: Real-Time High-Speed Bridge ──
   // ════════════════════════════════════════════════════════════════
-  if (isAppDomain) {
+  if (isApp) {
+    // Flag presence in DOM
+    try {
+      document.documentElement.setAttribute("data-cozylock-extension", "true");
+      (window as any).__COZYLOCK_INSTALLED__ = true;
+    } catch {}
+
     function postStateToWebApp(state: any) {
       if (!state) return;
       const payload = {
         type: "COZYLOCK_EXTENSION_STATE",
         isInstalled: true,
-        state,
+        state: {
+          ...state,
+          active: Boolean(state.active || state.isActive),
+          isActive: Boolean(state.active || state.isActive),
+          focusStartTime: state.focusStartTime || null,
+          focusDuration: state.focusDuration || null,
+          focusPIN: state.focusPIN || state.pin || "",
+          allowedUrls: state.allowedUrls || [],
+          remainingTime: state.remainingTime,
+          remainingSeconds: state.remainingSeconds
+        },
         version: "2.0.0",
         timestamp: Date.now()
       };
+
       window.postMessage(payload, "*");
-      if (syncChannel) syncChannel.postMessage(payload);
+      if (syncChannel) {
+        try { syncChannel.postMessage(payload); } catch {}
+      }
 
       try {
         localStorage.setItem("cozylock_shared_timer_state", JSON.stringify({
           active: Boolean(state.active || state.isActive),
           focusStartTime: state.focusStartTime || null,
           focusDuration: state.focusDuration || null,
-          pin: state.focusPIN || "",
+          pin: state.focusPIN || state.pin || "",
           allowedUrls: state.allowedUrls || [],
           timestamp: Date.now()
         }));
@@ -49,61 +108,45 @@
       safeSendMessage({ action: "getStatus" }, postStateToWebApp);
     }
 
-    // Refresh immediately and on visibility
+    // Refresh immediately and on visibility changes
     refreshStatus();
     setInterval(refreshStatus, 1000);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) refreshStatus();
     });
 
-    // Listen to background service worker state changes
+    // Listen to background service worker state changes directly
     try {
       chrome.runtime.onMessage.addListener((msg: any) => {
         if (msg.action === "focusStateChanged" || msg.type === "focusStateChanged") {
-          refreshStatus();
+          // If msg already contains the updated state, post it immediately
+          if (msg.isActive !== undefined || msg.active !== undefined) {
+            postStateToWebApp(msg);
+          } else {
+            refreshStatus();
+          }
         }
       });
     } catch {}
 
-    // Listen to localStorage events from web app
-    let lastStorageTime = 0;
-    function onStorageEvent() {
-      try {
-        const raw = localStorage.getItem("cozylock_app_focus_state");
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!parsed.timestamp || parsed.timestamp <= lastStorageTime) return;
-        lastStorageTime = parsed.timestamp;
-
-        const { action, durationMinutes, pin, allowedUrls, focusStartTime } = parsed;
-        if (action === "startFocus") {
-          safeSendMessage({
-            action: "startFocus",
-            duration: (durationMinutes || 25) * 60 * 1000,
-            allowedUrls: allowedUrls || [],
-            pin: pin || "",
-            focusStartTime: focusStartTime || Date.now()
-          }, () => refreshStatus());
-        } else if (action === "endFocus" || action === "pauseFocus") {
-          safeSendMessage({ action: "endFocus", pin: pin || "" }, () => refreshStatus());
-        } else if (action === "updateWhitelist") {
-          safeSendMessage({ action: "updateWhitelist", allowedUrls: allowedUrls || [] });
-        } else if (action === "syncPin") {
-          safeSendMessage({ action: "syncPin", pin: pin || "" });
+    // Listen to storage changes from chrome.storage
+    try {
+      chrome.storage?.onChanged?.addListener((changes: any, areaName: string) => {
+        if (areaName === "local" && changes.focusState?.newValue) {
+          postStateToWebApp(changes.focusState.newValue);
         }
-      } catch {}
-    }
-    window.addEventListener("storage", onStorageEvent);
-    setInterval(onStorageEvent, 300);
+      });
+    } catch {}
 
-    // Listen to window.postMessage from web app
+    // Listen to window.postMessage from Cozy Corner web app
     window.addEventListener("message", (event) => {
       if (!event.data) return;
       const type = event.data.type;
       if (type !== "COZYLOCK_WEB_APP_ACTION" && type !== "FOCUSNYX_WEB_APP_ACTION") return;
-      
+
       const { action } = event.data;
       const durationMins = event.data.durationMinutes || 25;
+      const durationMs = event.data.duration || (durationMins * 60 * 1000);
       const pin = event.data.pin !== undefined ? String(event.data.pin).replace(/\D/g, "").slice(0, 4) : undefined;
       const allowed = event.data.allowedUrls || [];
       const focusStartTime = event.data.focusStartTime || Date.now();
@@ -111,35 +154,60 @@
       if (action === "startFocus") {
         safeSendMessage({
           action: "startFocus",
-          duration: durationMins * 60 * 1000,
+          duration: durationMs,
+          durationMinutes: durationMins,
           allowedUrls: allowed,
           pin: pin,
           focusStartTime: focusStartTime
-        }, () => refreshStatus());
+        }, (res) => {
+          if (res && res.success) {
+            postStateToWebApp({
+              active: true,
+              isActive: true,
+              focusStartTime,
+              focusDuration: durationMs,
+              focusPIN: pin,
+              allowedUrls: allowed
+            });
+          }
+          refreshStatus();
+        });
       } else if (action === "endFocus" || action === "pauseFocus") {
         safeSendMessage({ action: "endFocus", pin: pin }, (res) => {
           if (res) {
             window.postMessage({ type: "COZYLOCK_ACTION_RESPONSE", action, result: res }, "*");
+            if (res.success) {
+              postStateToWebApp({
+                active: false,
+                isActive: false,
+                focusStartTime: null,
+                focusDuration: null,
+                focusPIN: pin,
+                allowedUrls: allowed
+              });
+            }
             refreshStatus();
           }
         });
       } else if (action === "getStatus" || action === "checkStatus") {
         refreshStatus();
       } else if (action === "updateWhitelist") {
-        safeSendMessage({ action: "updateWhitelist", allowedUrls: allowed });
+        safeSendMessage({ action: "updateWhitelist", allowedUrls: allowed }, () => refreshStatus());
       } else if (action === "syncPin") {
-        safeSendMessage({ action: "syncPin", pin: pin });
+        safeSendMessage({ action: "syncPin", pin: pin }, () => refreshStatus());
       }
     });
 
+    // Listen to BroadcastChannel
     if (syncChannel) {
       syncChannel.onmessage = (event) => {
         if (!event.data) return;
         const { action } = event.data;
         if (action === "startFocus") {
+          const durationMins = event.data.durationMinutes || 25;
           safeSendMessage({
             action: "startFocus",
-            duration: (event.data.durationMinutes || 25) * 60 * 1000,
+            duration: (durationMins) * 60 * 1000,
             allowedUrls: event.data.allowedUrls || [],
             pin: event.data.pin || "",
             focusStartTime: event.data.focusStartTime || Date.now()
@@ -167,7 +235,7 @@
   function isSiteAllowed(state: any): boolean {
     const allowedUrls: string[] = state?.allowedUrls || [];
     const systemAllowed = [
-      "cozyycorner.vercel.app", "localhost", "127.0.0.1", "fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com", "youtube.com", "www.youtube.com"
+      "cozyycorner.vercel.app", "localhost", "127.0.0.1", "fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com", "youtube.com", "www.youtube.com", "i.ytimg.com", "ytimg.com", "youtube-nocookie.com"
     ];
     return [...systemAllowed, ...allowedUrls].some((d) => {
       const clean = normHost(d);
@@ -199,7 +267,7 @@
         </p>
         <div style="background:rgba(14,9,20,0.6);border:1px solid rgba(244,114,182,0.2);border-radius:14px;padding:12px 18px;margin-bottom:22px;">
           <p style="font-size:11px;color:#786684;margin:0 0 4px 0;text-transform:uppercase;letter-spacing:1px;">Blocked Domain</p>
-          <p style="font-size:15px;font-weight:700;color:#fda4af;margin:0;word-break:break-all;">${currentHost}</p>
+          <p style="font-size:15px;font-weight:700;color:#fda4af;margin:0;word-break:break-all;">${currentHost || window.location.href}</p>
         </div>
         <button id="cozylock-return-btn" style="
           background:linear-gradient(135deg,#f472b6 0%,#db2777 100%);
@@ -283,13 +351,13 @@
 
   try {
     chrome.runtime.onMessage.addListener((msg: any) => {
-      if (msg.action === "focusStateChanged")
+      if (msg.action === "focusStateChanged" || msg.type === "focusStateChanged")
         safeSendMessage({ action: "getStatus" }, applyFocusState);
     });
   } catch {}
 
   try {
-    chrome.storage.onChanged.addListener((changes: any, area: string) => {
+    chrome.storage?.onChanged?.addListener((changes: any, area: string) => {
       if (area === "local" && changes.focusState)
         applyFocusState(changes.focusState.newValue);
     });

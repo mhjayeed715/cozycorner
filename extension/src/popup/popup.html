@@ -108,6 +108,23 @@
         <div id="pinStatusText" style="font-size: 11px; margin-top: 6px; color: #34d399;"></div>
       </div>
     </div>
+
+    <!-- IN-POPUP SAFETY PIN UNLOCK MODAL (Replaces ugly browser prompt) -->
+    <div class="popup-pin-modal" id="popupPinModal" style="display: none;">
+      <div class="popup-pin-card">
+        <div class="popup-pin-icon">🔒</div>
+        <h3 class="popup-pin-title">Focus Lock Active</h3>
+        <p class="popup-pin-desc">Enter your 4-digit Safety PIN to release focus early:</p>
+        <div class="popup-pin-input-row">
+          <input type="password" id="popupModalPinInput" maxlength="4" placeholder="••••" class="popup-modal-pin-input" autocomplete="off" inputmode="numeric" />
+        </div>
+        <div id="popupModalPinFeedback" class="popup-pin-feedback"></div>
+        <div class="popup-pin-actions">
+          <button id="popupModalPinCancelBtn" class="pin-cancel-btn">Keep Focusing</button>
+          <button id="popupModalPinSubmitBtn" class="pin-unlock-btn">Unlock Now</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="./popup.js"></script>

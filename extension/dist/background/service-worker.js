@@ -112,12 +112,14 @@ var COZY_APP_DOMAINS = [
   "cozyycorner.vercel.app",
   "localhost",
   "127.0.0.1",
+  "0.0.0.0",
   "cozyplay"
 ];
 var ALWAYS_ALLOWED_DOMAINS = [
   "cozyycorner.vercel.app",
   "localhost",
   "127.0.0.1",
+  "0.0.0.0",
   "fonts.googleapis.com",
   "fonts.gstatic.com",
   "unpkg.com",
@@ -158,8 +160,15 @@ function normalizeDomain(raw) {
   return raw.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/:.*$/, "").replace(/\/.*$/, "").trim();
 }
 function isCozyTab(url) {
+  if (!url) return false;
   try {
+    if (url.startsWith("file:") && (url.includes("cozyplay") || url.includes("cozy") || url.includes("index.html"))) {
+      return true;
+    }
     const h = new URL(url).hostname.toLowerCase();
+    if (h.includes("vercel.app") || h.includes("cozy") || h.includes("cozyplay") || h.includes("cozycorner")) {
+      return true;
+    }
     return COZY_APP_DOMAINS.some((d) => h === d || h.endsWith("." + d));
   } catch {
     return false;
@@ -171,22 +180,37 @@ function buildAllowedList(allowedUrls) {
 }
 function shouldBlock(url) {
   if (!_state.active || !url) return false;
-  if (url.startsWith("chrome-extension://") || url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.startsWith("file://")) return false;
+  if (url.startsWith("chrome-extension://") || url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.startsWith("devtools://") || url.startsWith("blob:") || url.startsWith("data:")) return false;
+  if (isCozyTab(url)) return false;
   let hostname = "";
   try {
     hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, "").replace(/:.*$/, "");
   } catch {
     return false;
   }
+  if (!hostname) return false;
   const allowedList = buildAllowedList(_state.allowedUrls || []);
   const isAllowed = allowedList.some((clean) => clean && (hostname === clean || hostname.endsWith("." + clean)));
-  if (!isAllowed) {
-    console.log("[CozyLock SW] Blocked distracting domain:", hostname);
-  }
   return !isAllowed;
 }
+function blockActiveDistractingTabs() {
+  if (!_state.active) return;
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach((tab) => {
+      if (tab.id && tab.url && shouldBlock(tab.url)) {
+        const blockedUrl = chrome.runtime.getURL("blocked.html") + "?url=" + encodeURIComponent(tab.url);
+        chrome.tabs.update(tab.id, { url: blockedUrl });
+        logDistraction({ type: "navigation_blocked", url: tab.url });
+      }
+    });
+  });
+}
 async function persistState() {
-  await chrome.storage.local.set({ focusState: { ..._state }, pin: _state.focusPIN });
+  await chrome.storage.local.set({
+    focusState: { ..._state },
+    pin: _state.focusPIN,
+    cozylockWhitelist: _state.allowedUrls
+  });
   notifyAllTabs(_state.active);
 }
 async function loadState() {
@@ -200,7 +224,7 @@ async function loadState() {
       } else if (data.cozylockWhitelist) {
         _state.allowedUrls = data.cozylockWhitelist;
       }
-      if (data.pin) _state.focusPIN = String(data.pin);
+      if (data.pin) _state.focusPIN = String(data.pin).replace(/\D/g, "").slice(0, 4);
       if (data.userAuth?.token) {
         _state.token = data.userAuth.token;
         _state.userId = data.userAuth.email || data.userAuth.userId || _state.userId;
@@ -225,6 +249,7 @@ function notifyAllTabs(isActive) {
       if (tab.id && tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://") && !tab.url.startsWith("about:")) {
         chrome.tabs.sendMessage(tab.id, {
           action: "focusStateChanged",
+          type: "focusStateChanged",
           isActive,
           active: isActive,
           focusStartTime: _state.focusStartTime,
@@ -330,7 +355,7 @@ function handleMessage(request, sender, sendResponse) {
         userAuth: { token: nextToken, userId: nextUserId, email: request.email || nextUserId }
       });
       if (request.pin) {
-        _state.focusPIN = String(request.pin);
+        _state.focusPIN = String(request.pin).replace(/\D/g, "").slice(0, 4);
         await chrome.storage.local.set({ pin: _state.focusPIN });
       }
       await persistState();
@@ -341,7 +366,7 @@ function handleMessage(request, sender, sendResponse) {
   if (request.action === "syncPin") {
     (async () => {
       if (request.pin !== void 0) {
-        _state.focusPIN = String(request.pin).trim();
+        _state.focusPIN = String(request.pin).replace(/\D/g, "").slice(0, 4);
         await chrome.storage.local.set({ pin: _state.focusPIN, focusState: { ..._state } });
       }
       sendResponse({ ok: true, success: true, pin: _state.focusPIN });
@@ -356,7 +381,7 @@ function handleMessage(request, sender, sendResponse) {
       const allowedUrls = Array.from(new Set(
         [...COZY_APP_DOMAINS, ...incoming].map((v) => normalizeDomain(String(v || ""))).filter(Boolean)
       ));
-      const pin = request.pin !== void 0 ? String(request.pin).trim() : _state.focusPIN || "";
+      const pin = request.pin !== void 0 && String(request.pin).trim().length === 4 ? String(request.pin).replace(/\D/g, "").slice(0, 4) : _state.focusPIN || "";
       const token = request.token || _state.token;
       const sessionId = request.sessionId || `session-${Date.now()}`;
       const userId = request.userId || _state.userId;
@@ -373,16 +398,24 @@ function handleMessage(request, sender, sendResponse) {
         focusPIN: pin
       };
       chrome.alarms.create("autoUnlockFocus", { when: startTime + duration });
-      await chrome.storage.local.set({ focusState: { ..._state }, cozylockWhitelist: allowedUrls, pin });
+      await chrome.storage.local.set({
+        focusState: { ..._state },
+        cozylockWhitelist: allowedUrls,
+        pin
+      });
       notifyAllTabs(true);
-      console.log("[CozyLock SW] Focus Lock Active. Allowed sites:", allowedUrls, "PIN set:", Boolean(pin));
+      blockActiveDistractingTabs();
+      console.log("[CozyLock SW] Focus Lock Active. Start:", startTime, "Duration:", duration, "PIN:", Boolean(pin));
       sendResponse({
         ok: true,
         success: true,
+        active: true,
+        isActive: true,
         message: "CozyLock Active",
         focusStartTime: startTime,
         focusDuration: duration,
-        focusPIN: pin
+        focusPIN: pin,
+        allowedUrls
       });
     })();
     return true;
@@ -391,7 +424,7 @@ function handleMessage(request, sender, sendResponse) {
     (async () => {
       const storedPin = _state.focusPIN ? String(_state.focusPIN).trim() : "";
       const incomingPin = request.pin !== void 0 ? String(request.pin).trim() : "";
-      if (storedPin && storedPin.length > 0) {
+      if (storedPin && storedPin.length === 4) {
         if (incomingPin !== storedPin) {
           sendResponse({
             ok: false,
@@ -406,7 +439,7 @@ function handleMessage(request, sender, sendResponse) {
       _state.focusStartTime = null;
       _state.sessionId = null;
       await persistState();
-      sendResponse({ ok: true, success: true, message: "CozyLock Released" });
+      sendResponse({ ok: true, success: true, active: false, isActive: false, message: "CozyLock Released" });
     })();
     return true;
   }
@@ -417,8 +450,8 @@ function handleMessage(request, sender, sendResponse) {
         [...COZY_APP_DOMAINS, ...incoming].map((d) => normalizeDomain(d)).filter(Boolean)
       ));
       await chrome.storage.local.set({ cozylockWhitelist: _state.allowedUrls, focusState: { ..._state } });
-      console.log("[CozyLock SW] Whitelist updated:", _state.allowedUrls);
-      sendResponse({ ok: true, success: true });
+      notifyAllTabs(_state.active);
+      sendResponse({ ok: true, success: true, allowedUrls: _state.allowedUrls });
     })();
     return true;
   }
@@ -448,7 +481,7 @@ function handleMessage(request, sender, sendResponse) {
           if (chrome.runtime.lastError) {
           }
         });
-        if (sender.tab?.id) {
+        if (sender.tab?.id && sender.tab.id !== cozyTab.id) {
           if (tabs.length > 1) {
             chrome.tabs.remove(sender.tab.id, () => {
               if (chrome.runtime.lastError) {
