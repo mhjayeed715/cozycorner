@@ -50,7 +50,7 @@
   function safeSendMessage(message: any, callback?: (res: any) => void) {
     try {
       if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.id) return;
-      chrome.runtime.sendMessage(message, (res) => {
+      chrome.runtime.sendMessage(message, (res: any) => {
         if (chrome.runtime.lastError) return;
         if (callback) callback(res);
       });

@@ -37,7 +37,7 @@ export async function authenticateUser(email: string, password: string): Promise
 async function refreshAccessToken(): Promise<string | null> {
   try {
     const stored = await new Promise<any>((res) =>
-      chrome.storage.local.get("userAuth", (d) => res(d.userAuth ?? {}))
+      chrome.storage.local.get("userAuth", (d: any) => res(d.userAuth ?? {}))
     );
     const refreshToken = stored.refreshToken;
     if (!refreshToken) return null;

@@ -115,8 +115,8 @@ function shouldBlock(url: string): boolean {
 // Immediately redirect distracting open tabs to blocked.html
 function blockActiveDistractingTabs() {
   if (!_state.active) return;
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach((tab) => {
+  chrome.tabs.query({}, (tabs: any[]) => {
+    tabs.forEach((tab: any) => {
       if (tab.id && tab.url && shouldBlock(tab.url)) {
         const blockedUrl = chrome.runtime.getURL("blocked.html") + "?url=" + encodeURIComponent(tab.url);
         chrome.tabs.update(tab.id, { url: blockedUrl });
@@ -139,7 +139,7 @@ async function persistState(): Promise<void> {
 // Load state from storage into _state
 async function loadState(): Promise<void> {
   return new Promise((resolve) => {
-    chrome.storage.local.get(["focusState", "pin", "userAuth", "cozylockWhitelist"], (data) => {
+    chrome.storage.local.get(["focusState", "pin", "userAuth", "cozylockWhitelist"], (data: any) => {
       if (data.focusState) {
         _state = { ..._state, ...data.focusState };
         if (!Array.isArray(_state.allowedUrls) || _state.allowedUrls.length === 0) {
@@ -173,8 +173,8 @@ async function loadState(): Promise<void> {
 }
 
 function notifyAllTabs(isActive: boolean) {
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach((tab) => {
+  chrome.tabs.query({}, (tabs: any[]) => {
+    tabs.forEach((tab: any) => {
       if (tab.id && tab.url &&
         !tab.url.startsWith("chrome://") &&
         !tab.url.startsWith("edge://") &&
@@ -210,7 +210,7 @@ async function logDistraction(data: Partial<BlockEvent>) {
   };
 
   const pending: BlockEvent[] = await new Promise((res) =>
-    chrome.storage.local.get("pendingEvents", (d) => res(d.pendingEvents ?? []))
+    chrome.storage.local.get("pendingEvents", (d: any) => res(d.pendingEvents ?? []))
   );
   await chrome.storage.local.set({ pendingEvents: [...pending, event] });
 
@@ -224,7 +224,7 @@ async function logDistraction(data: Partial<BlockEvent>) {
 
 // ── Interception & Blocking Listeners ──
 
-chrome.webNavigation?.onBeforeNavigate.addListener((details) => {
+chrome.webNavigation?.onBeforeNavigate.addListener((details: any) => {
   if (details.frameId !== 0) return;
   if (!shouldBlock(details.url)) return;
   const blockedUrl = chrome.runtime.getURL("blocked.html") + "?url=" + encodeURIComponent(details.url);
@@ -232,14 +232,14 @@ chrome.webNavigation?.onBeforeNavigate.addListener((details) => {
   logDistraction({ type: "navigation_blocked", url: details.url });
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: any) => {
   if (!changeInfo.url || !shouldBlock(changeInfo.url)) return;
   const blockedUrl = chrome.runtime.getURL("blocked.html") + "?url=" + encodeURIComponent(changeInfo.url);
   chrome.tabs.update(tabId, { url: blockedUrl });
   logDistraction({ type: "navigation_blocked", url: changeInfo.url });
 });
 
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
+chrome.tabs.onActivated.addListener(async (activeInfo: any) => {
   if (!_state.active) return;
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
@@ -250,7 +250,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   } catch {}
 });
 
-chrome.tabs.onCreated.addListener((tab) => {
+chrome.tabs.onCreated.addListener((tab: any) => {
   if (!_state.active) return;
   setTimeout(async () => {
     try {
@@ -265,7 +265,7 @@ chrome.tabs.onCreated.addListener((tab) => {
   }, 250);
 });
 
-chrome.alarms.onAlarm.addListener(async (alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm: any) => {
   if (alarm.name === "autoUnlockFocus" && _state.active) {
     _state.active = false;
     _state.focusStartTime = null;
@@ -274,7 +274,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-chrome.webNavigation?.onErrorOccurred.addListener((details) => {
+chrome.webNavigation?.onErrorOccurred.addListener((details: any) => {
   if (details.error !== "net::ERR_BLOCKED_BY_CLIENT") return;
   if (_state.active) logDistraction({ type: "navigation_blocked", url: details.url });
 });
@@ -438,7 +438,7 @@ function handleMessage(request: any, sender: any, sendResponse: (response?: any)
   if (request.action === "closeBlockedTab" || request.action === "redirectOrCloseBlockedTab") {
     (async () => {
       const tabs = await chrome.tabs.query({});
-      const cozyTab = tabs.find((t) => t.url && isCozyTab(t.url));
+      const cozyTab = tabs.find((t: any) => t.url && isCozyTab(t.url));
       const defaultAppUrl = "https://cozyycorner.vercel.app/";
       if (cozyTab?.id) {
         chrome.tabs.update(cozyTab.id, { active: true }, () => { if (chrome.runtime.lastError) {} });
